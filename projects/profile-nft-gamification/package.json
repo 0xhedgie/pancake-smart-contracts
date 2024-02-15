@@ -16,8 +16,7 @@
   },
   "dependencies": {
     "bsc-library": "1.0.0",
-    "secta-cake-vault": "1.0.0",
-    "predictions": "1.0.1"
+    "secta-cake-vault": "1.0.0"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^3.2.0"
