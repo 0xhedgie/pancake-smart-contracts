@@ -1,5 +1,5 @@
 {
-  "extends": "@xxxyyy/eslint-config-xxx",
+  "extends": "@pancakeswap/eslint-config-pancake",
   "rules": {
     "import/no-extraneous-dependencies": 0
   }
