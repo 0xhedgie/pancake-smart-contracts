@@ -1,13 +1,13 @@
 {
-  "name": "pancake-contracts",
+  "name": "secta-contracts",
   "version": "1.0.0",
-  "description": "Pancake contracts",
+  "description": "Secta contracts",
   "private": true,
   "workspaces": [
     "projects/**"
   ],
-  "repository": "https://github.com/pancakeswap/pancake-contracts",
-  "author": "PancakeSwap",
+  "repository": "https://github.com/secta-finance/secta-smart-contracts",
+  "author": "SectaFinance",
   "license": "MIT",
   "scripts": {
     "format:check": "prettier --check \"projects/**/*.{js,ts,sol}\"",
@@ -22,8 +22,8 @@
     "@nomiclabs/hardhat-truffle5": "^2.0.0",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/test-helpers": "^0.5.11",
-    "@pancakeswap/eslint-config-pancake": "^1.2.0",
-    "@pancakeswap/pancake-swap-lib": "0.0.4",
+    "@xxxyyy/eslint-config-xxx": "^1.2.0",
+    "@xxxyyy/yyy-lib": "0.0.4",
     "@types/chai": "^4.2.21",
     "@types/mocha": "^8.2.2",
     "@types/node": "^14.14.35",

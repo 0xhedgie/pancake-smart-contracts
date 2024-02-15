@@ -12,7 +12,7 @@ import "./interfaces/IIFOV2.sol";
 /**
  * @title IFOV2
  * @notice It is an upgrade of the original IFO model with 2 pools and
- * other PancakeProfile requirements.
+ * other SectaProfile requirements.
  */
 contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
@@ -23,8 +23,8 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
     // The offering token
     IERC20 public offeringToken;
 
-    // PancakeProfile
-    // PancakeProfile public pancakeProfile;
+    // SectaProfile
+    // SectaProfile public sectaProfile;
 
     // Number of pools
     uint8 public constant numberPools = 2;
@@ -461,7 +461,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
             if (sumPools > thresholdPoints) {
                 _hasClaimedPoints[_user] = true;
                 // Increase user points
-                // pancakeProfile.increaseUserPoints(msg.sender, numberPoints, campaignId);
+                // sectaProfile.increaseUserPoints(msg.sender, numberPoints, campaignId);
             }
         }
     }

@@ -28,8 +28,8 @@ const main = async () => {
     const offeringTokenAddress = "0x7A7CA1830fbf7257669C2eee763E03081bc1fc85";
     const ifoV2Address = "0x2247E2B8182D7A785dAE88Cd7191378a0112ff0B";
 
-    const MockBEP20 = await ethers.getContractFactory("MockERC20");
-    const offeringToken = MockBEP20.attach(offeringTokenAddress);
+    const MockERC20 = await ethers.getContractFactory("MockERC20");
+    const offeringToken = MockERC20.attach(offeringTokenAddress);
     const ifoV2 = IFOV2.attach(ifoV2Address);
 
     // IFO Pool 0 private pool

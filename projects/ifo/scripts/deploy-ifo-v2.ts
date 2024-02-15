@@ -25,8 +25,8 @@ const main = async () => {
     await ifoV2.deployed();
     console.log("IFOV2 deployed to:", ifoV2.address);
   } else if (name === "testnet") {
-    const MockBEP20 = await ethers.getContractFactory("MockERC20");
-    const offeringToken = await MockBEP20.deploy("HiYield Test Offering Coin", "HTOC", parseEther("10000000"));
+    const MockERC20 = await ethers.getContractFactory("MockERC20");
+    const offeringToken = await MockERC20.deploy("HiYield Test Offering Coin", "HTOC", parseEther("10000000"));
 
     await offeringToken.deployed();
     console.log("OC32 token deployed to:", offeringToken.address);

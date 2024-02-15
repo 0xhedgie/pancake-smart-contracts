@@ -13,7 +13,7 @@
   "dependencies": {
     "bsc-library": "1.0.0",
     "profile-nft-gamification": "2.0.0",
-    "pancake-cake-vault": "1.0.0"
+    "secta-secta-vault": "1.0.0"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-verify": "^2.0.2",

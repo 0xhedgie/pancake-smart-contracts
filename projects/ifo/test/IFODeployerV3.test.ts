@@ -7,24 +7,24 @@ import { BN, expectEvent, expectRevert, time, ether } from "@openzeppelin/test-h
 const IFOInitializableV3 = artifacts.require("./IFOInitializableV3.sol");
 const IFODeployerV3 = artifacts.require("./IFODeployerV3.sol");
 
-const PancakeProfile = artifacts.require("profile-nft-gamification/contracts/PancakeProfile.sol");
-const MockBEP20 = artifacts.require("./utils/MockBEP20.sol");
+const SectaProfile = artifacts.require("profile-nft-gamification/contracts/SectaProfile.sol");
+const MockERC20 = artifacts.require("./utils/MockERC20.sol");
 const MockERC20 = artifacts.require("./utils/MockERC20.sol");
 const MockBunnies = artifacts.require("./utils/MockBunnies.sol");
 
-const CakeToken = artifacts.require("cake-vault/contracts/test/CakeToken.sol");
-const SyrupBar = artifacts.require("cake-vault/contracts/test/SyrupBar.sol");
-const MasterChef = artifacts.require("cake-vault/contracts/test/MasterChef.sol");
-const IFOPool = artifacts.require("cake-vault/contracts/IFOPool.sol");
+const SectaToken = artifacts.require("secta-vault/contracts/test/SectaToken.sol");
+const SyrupBar = artifacts.require("secta-vault/contracts/test/SyrupBar.sol");
+const MasterChef = artifacts.require("secta-vault/contracts/test/MasterChef.sol");
+const IFOPool = artifacts.require("secta-vault/contracts/IFOPool.sol");
 
 const REWARDS_START_BLOCK = 100;
 
 contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
-  // PancakeProfile
-  const _totalInitSupply = parseEther("5000000"); // 50 CAKE
-  const _numberCakeToReactivate = parseEther("5"); // 5 CAKE
-  const _numberCakeToRegister = parseEther("5"); // 5 CAKE
-  const _numberCakeToUpdate = parseEther("2"); // 2 CAKE
+  // SectaProfile
+  const _totalInitSupply = parseEther("5000000"); // 50 SECTA
+  const _numberSectaToReactivate = parseEther("5"); // 5 SECTA
+  const _numberSectaToRegister = parseEther("5"); // 5 SECTA
+  const _numberSectaToUpdate = parseEther("2"); // 2 SECTA
 
   // IFO block times
   let _startBlock;
@@ -52,99 +52,99 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
 
   // Contracts
   let mockBunnies,
-    mockCake,
+    mockSecta,
     mockIFO,
     mockOC,
     mockLP,
-    pancakeProfile,
+    sectaProfile,
     deployer,
     ifopool,
-    cake,
+    secta,
     syrup,
     masterchef,
     rewardsStartBlock;
 
-  // Roles in PancakeProfile
+  // Roles in SectaProfile
   let DEFAULT_ADMIN_ROLE, NFT_ROLE, POINT_ROLE;
   // Generic result variable
   let result;
 
   before(async () => {
-    // Deploy MockCAKE
-    mockCake = await MockBEP20.new("Mock CAKE", "CAKE", _totalInitSupply);
+    // Deploy MockSECTA
+    mockSecta = await MockERC20.new("Mock SECTA", "SECTA", _totalInitSupply);
 
     // Deploy MockLP
-    mockLP = await MockBEP20.new("Mock LP", "LP", _totalInitSupply, {
+    mockLP = await MockERC20.new("Mock LP", "LP", _totalInitSupply, {
       from: alice,
     });
 
     // Deploy MockOfferingCoin (100M initial supply)
-    mockOC = await MockBEP20.new("Mock Offering Coin", "OC", parseEther("100000000"), {
+    mockOC = await MockERC20.new("Mock Offering Coin", "OC", parseEther("100000000"), {
       from: alice,
     });
 
     // Deploy Mock Bunnies
     mockBunnies = await MockBunnies.new({ from: alice });
 
-    // Deploy Pancake Profile
-    pancakeProfile = await PancakeProfile.new(
-      mockCake.address,
-      _numberCakeToReactivate,
-      _numberCakeToRegister,
-      _numberCakeToUpdate,
+    // Deploy Secta Profile
+    sectaProfile = await SectaProfile.new(
+      mockSecta.address,
+      _numberSectaToReactivate,
+      _numberSectaToRegister,
+      _numberSectaToUpdate,
       { from: alice }
     );
 
     // Deploy IFOPool
-    cake = await CakeToken.new({ from: frank });
-    syrup = await SyrupBar.new(cake.address, { from: frank });
+    secta = await SectaToken.new({ from: frank });
+    syrup = await SyrupBar.new(secta.address, { from: frank });
     rewardsStartBlock = (await time.latestBlock()).toNumber() + REWARDS_START_BLOCK;
-    masterchef = await MasterChef.new(cake.address, syrup.address, frank, ether("1"), rewardsStartBlock, {
+    masterchef = await MasterChef.new(secta.address, syrup.address, frank, ether("1"), rewardsStartBlock, {
       from: frank,
     });
 
-    ifopool = await IFOPool.new(cake.address, syrup.address, masterchef.address, frank, frank, 500, 505, {
+    ifopool = await IFOPool.new(secta.address, syrup.address, masterchef.address, frank, frank, 500, 505, {
       from: frank,
     });
 
     await syrup.transferOwnership(masterchef.address, { from: frank });
     // grant all users credits
     for (let user of [alice, bob, carol, david, erin, frank, frank, ...accounts]) {
-      // Mint cakes to all users
-      await cake.mint(user, ether("1000000"), { from: frank });
-      // Approves cake to be spent by IFOPool
-      await cake.approve(ifopool.address, parseEther("1000000"), {
+      // Mint secta to all users
+      await secta.mint(user, ether("1000000"), { from: frank });
+      // Approves secta to be spent by IFOPool
+      await secta.approve(ifopool.address, parseEther("1000000"), {
         from: user,
       });
 
       await ifopool.deposit(ether("10000"), { from: user });
     }
     await ifopool.withdraw(ether("8000"), { from: accounts[2] });
-    await cake.transferOwnership(masterchef.address, { from: frank });
+    await secta.transferOwnership(masterchef.address, { from: frank });
 
     await time.advanceBlockTo(515);
 
     // Assign the roles
-    DEFAULT_ADMIN_ROLE = await pancakeProfile.DEFAULT_ADMIN_ROLE();
-    NFT_ROLE = await pancakeProfile.NFT_ROLE();
-    POINT_ROLE = await pancakeProfile.POINT_ROLE();
+    DEFAULT_ADMIN_ROLE = await sectaProfile.DEFAULT_ADMIN_ROLE();
+    NFT_ROLE = await sectaProfile.NFT_ROLE();
+    POINT_ROLE = await sectaProfile.POINT_ROLE();
   });
 
   describe("Initial contract parameters for all contracts", async () => {
-    it("PancakeProfile is correct", async () => {
-      assert.equal(await pancakeProfile.cakeToken(), mockCake.address);
-      assert.equal(String(await pancakeProfile.numberCakeToReactivate()), String(_numberCakeToReactivate));
-      assert.equal(String(await pancakeProfile.numberCakeToRegister()), String(_numberCakeToRegister));
-      assert.equal(String(await pancakeProfile.numberCakeToUpdate()), String(_numberCakeToUpdate));
+    it("SectaProfile is correct", async () => {
+      assert.equal(await sectaProfile.sectaToken(), mockSecta.address);
+      assert.equal(String(await sectaProfile.numberSectaToReactivate()), String(_numberSectaToReactivate));
+      assert.equal(String(await sectaProfile.numberSectaToRegister()), String(_numberSectaToRegister));
+      assert.equal(String(await sectaProfile.numberSectaToUpdate()), String(_numberSectaToUpdate));
 
-      assert.equal(await pancakeProfile.getRoleMemberCount(DEFAULT_ADMIN_ROLE), "1");
+      assert.equal(await sectaProfile.getRoleMemberCount(DEFAULT_ADMIN_ROLE), "1");
     });
 
     it("Alice adds NFT and a team in the system", async () => {
-      await pancakeProfile.addNftAddress(mockBunnies.address, {
+      await sectaProfile.addNftAddress(mockBunnies.address, {
         from: alice,
       });
-      await pancakeProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
+      await sectaProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
         from: alice,
       });
     });
@@ -153,8 +153,8 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
       let i = 0;
 
       for (let thisUser of [bob, carol, david, erin]) {
-        // Mints 100 CAKE
-        await mockCake.mintTokens(parseEther("100"), { from: thisUser });
+        // Mints 100 SECTA
+        await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
 
         // Mints 10,000 LP tokens
         await mockLP.mintTokens(parseEther("10000"), { from: thisUser });
@@ -163,17 +163,17 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
         result = await mockBunnies.mint({ from: thisUser });
 
         // Approves the contract to receive his NFT
-        await mockBunnies.approve(pancakeProfile.address, i, {
+        await mockBunnies.approve(sectaProfile.address, i, {
           from: thisUser,
         });
 
-        // Approves CAKE to be spent by PancakeProfile
-        await mockCake.approve(pancakeProfile.address, parseEther("100"), {
+        // Approves SECTA to be spent by SectaProfile
+        await mockSecta.approve(sectaProfile.address, parseEther("100"), {
           from: thisUser,
         });
 
         // Creates the profile
-        await pancakeProfile.createProfile("1", mockBunnies.address, i, {
+        await sectaProfile.createProfile("1", mockBunnies.address, i, {
           from: thisUser,
         });
         i++;
@@ -181,8 +181,8 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
 
       // 4 generic accounts too
       for (let thisUser of accounts) {
-        // Mints 100 CAKE
-        await mockCake.mintTokens(parseEther("100"), { from: thisUser });
+        // Mints 100 SECTA
+        await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
 
         // Mints 1,000 LP tokens
         await mockLP.mintTokens(parseEther("1000"), { from: thisUser });
@@ -191,17 +191,17 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
         result = await mockBunnies.mint({ from: thisUser });
 
         // Approves the contract to receive his NFT
-        await mockBunnies.approve(pancakeProfile.address, i, {
+        await mockBunnies.approve(sectaProfile.address, i, {
           from: thisUser,
         });
 
-        // Approves CAKE to be spent by PancakeProfile
-        await mockCake.approve(pancakeProfile.address, parseEther("100"), {
+        // Approves SECTA to be spent by SectaProfile
+        await mockSecta.approve(sectaProfile.address, parseEther("100"), {
           from: thisUser,
         });
 
         // Creates the profile
-        await pancakeProfile.createProfile("1", mockBunnies.address, i, {
+        await sectaProfile.createProfile("1", mockBunnies.address, i, {
           from: thisUser,
         });
         i++;
@@ -211,7 +211,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
 
   describe("IFO DeployerV3 #0 - Initial set up", async () => {
     it("The IFODeployerV3 is deployed and initialized", async () => {
-      deployer = await IFODeployerV3.new(pancakeProfile.address, {
+      deployer = await IFODeployerV3.new(sectaProfile.address, {
         from: alice,
       });
     });
@@ -258,7 +258,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
       expectEvent(result, "NewStartAndEndBlocks", { startBlock: _startBlock, endBlock: _endBlock });
 
       // Grants point role to the IFO contract
-      await pancakeProfile.grantRole(POINT_ROLE, mockIFO.address);
+      await sectaProfile.grantRole(POINT_ROLE, mockIFO.address);
     });
 
     it("Mock IFO is deployed without pools set", async () => {
@@ -726,7 +726,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
         pid: "0",
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease", {
+      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
         userAddress: bob,
         numberPoints: String(numberPoints),
         campaignId: String(campaignId),
@@ -771,7 +771,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
         pid: "0",
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease", {
+      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
         userAddress: carol,
         numberPoints: String(numberPoints),
         campaignId: String(campaignId),
@@ -811,7 +811,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
       });
 
       // Verify Bob has not collected points twice
-      expectEvent.notEmitted.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease");
+      expectEvent.notEmitted.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease");
 
       const newOCBalance = new BN(await mockOC.balanceOf(bob));
       const changeOCBalance = newOCBalance.sub(previousOCBalance);
@@ -855,7 +855,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
       });
 
       // Verify Carol has not collected points twice
-      expectEvent.notEmitted.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease");
+      expectEvent.notEmitted.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease");
 
       const newOCBalance = new BN(await mockOC.balanceOf(carol));
       const changeOCBalance = newOCBalance.sub(previousOCBalance);
@@ -1082,7 +1082,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     it("Owner can recover funds if wrong token", async () => {
       // Deploy Wrong LP
-      const wrongLP = await MockBEP20.new("Wrong LP", "LP", "100", {
+      const wrongLP = await MockERC20.new("Wrong LP", "LP", "100", {
         from: alice,
       });
 

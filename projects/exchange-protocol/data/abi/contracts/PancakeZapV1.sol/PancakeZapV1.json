@@ -3,12 +3,12 @@
     "inputs": [
       {
         "internalType": "address",
-        "name": "_WBNBAddress",
+        "name": "_WETHAddress",
         "type": "address"
       },
       {
         "internalType": "address",
-        "name": "_pancakeRouter",
+        "name": "_sectaRouter",
         "type": "address"
       },
       {
@@ -222,7 +222,7 @@
   },
   {
     "inputs": [],
-    "name": "WBNB",
+    "name": "WETH",
     "outputs": [
       {
         "internalType": "contract IWETH",
@@ -388,10 +388,10 @@
   },
   {
     "inputs": [],
-    "name": "pancakeRouter",
+    "name": "sectaRouter",
     "outputs": [
       {
-        "internalType": "contract IPancakeRouter02",
+        "internalType": "contract ISectaRouter02",
         "name": "",
         "type": "address"
       }
@@ -463,7 +463,7 @@
         "type": "uint256"
       }
     ],
-    "name": "zapInBNB",
+    "name": "zapInETH",
     "outputs": [],
     "stateMutability": "payable",
     "type": "function"
@@ -501,7 +501,7 @@
         "type": "bool"
       }
     ],
-    "name": "zapInBNBRebalancing",
+    "name": "zapInETHRebalancing",
     "outputs": [],
     "stateMutability": "payable",
     "type": "function"
@@ -600,7 +600,7 @@
         "type": "uint256"
       }
     ],
-    "name": "zapOutBNB",
+    "name": "zapOutETH",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

@@ -11,7 +11,7 @@ export default {
     mainnet: "0x0000000000000000000000000000000000000000", // TO BE REPLACED
     testnet: "0x090f12AbCfF3378f84821FB43A96A473B0aD9e75", // TO BE REPLACED
   },
-  PancakeProfile: {
+  SectaProfile: {
     mainnet: "0xdf4dbf6536201370f95e06a0f8a7a70fe40e388a",
     testnet: "0x4B683C7E13B6d5D7fd1FeA9530F451954c1A7c8A",
   },
