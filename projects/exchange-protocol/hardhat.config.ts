@@ -1,5 +1,6 @@
 import type { HardhatUserConfig, NetworkUserConfig } from "hardhat/types";
 import "@nomiclabs/hardhat-ethers";
+import '@nomiclabs/hardhat-etherscan'
 import "@nomiclabs/hardhat-web3";
 import "@nomiclabs/hardhat-truffle5";
 import "hardhat-abi-exporter";
@@ -7,15 +8,15 @@ import "hardhat-contract-sizer";
 import "solidity-coverage";
 import "dotenv/config";
 
-const bscTestnet: NetworkUserConfig = {
-  url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
-  chainId: 97,
+const lineaGoerli: NetworkUserConfig = {
+  url: "https://linea-testnet.rpc.thirdweb.com/",
+  chainId: 59140,
   accounts: [process.env.KEY_TESTNET!],
 };
 
-const bscMainnet: NetworkUserConfig = {
-  url: "https://bsc-dataseed.binance.org/",
-  chainId: 56,
+const linea: NetworkUserConfig = {
+  url: "https://linea.rpc.thirdweb.com/",
+  chainId: 59144,
   accounts: [process.env.KEY_MAINNET!],
 };
 
@@ -23,8 +24,29 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
-    // testnet: bscTestnet,
-    // mainnet: bscMainnet,
+    ...(process.env.KEY_TESTNET && { lineaGoerli }),
+    ...(process.env.KEY_MAINNET && { linea }),
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_API_KEY || '',
+    customChains: [
+      {
+        network: 'lineaGoerli',
+        chainId: 59140,
+        urls: {
+          apiURL: 'https://api-testnet.lineascan.build/api',
+          browserURL: 'https://goerli.lineascan.build/',
+        },
+      },
+      {
+        network: 'linea',
+        chainId: 59144,
+        urls: {
+          apiURL: 'https://api.lineascan.build/api',
+          browserURL: 'https://lineascan.build/',
+        },
+      },
+    ],
   },
   solidity: {
     compilers: [

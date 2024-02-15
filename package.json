@@ -4,7 +4,8 @@
   "description": "Secta contracts",
   "private": true,
   "workspaces": [
-    "projects/**"
+    "projects/**",
+    "common"
   ],
   "repository": "https://github.com/secta-finance/secta-smart-contracts",
   "author": "SectaFinance",

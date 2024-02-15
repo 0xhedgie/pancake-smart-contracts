@@ -24,7 +24,7 @@ contract("SectaZapV1", ([alice, bob, carol, david, erin]) => {
 
   before(async () => {
     // Deploy Factory
-    sectaFactory = await SectaFactory.new(alice, { from: alice });
+    sectaFactory = await SectaFactory.new({ from: alice });
 
     // Deploy Wrapped ETH
     wrappedETH = await WETH.new({ from: alice });
@@ -55,7 +55,7 @@ contract("SectaZapV1", ([alice, bob, carol, david, erin]) => {
     assert.equal(String(await pairAC.totalSupply()), parseEther("0").toString());
 
     // Mint and approve all contracts
-    for (let thisUser of [alice, bob, carol, david, erin]) {
+    for (const thisUser of [alice, bob, carol, david, erin]) {
       await tokenA.mintTokens(parseEther("2000000"), { from: thisUser });
       await tokenC.mintTokens(parseEther("2000000"), { from: thisUser });
 
@@ -199,8 +199,8 @@ contract("SectaZapV1", ([alice, bob, carol, david, erin]) => {
       });
 
       expectEvent(result, "ZapIn", {
-        tokenToZap: tokenToZap,
-        lpToken: lpToken,
+        tokenToZap,
+        lpToken,
         tokenAmountIn: parseEther("1").toString(),
         lpTokenAmountReceived: parseEther("0.499373703104732887").toString(),
         user: carol,
@@ -213,9 +213,9 @@ contract("SectaZapV1", ([alice, bob, carol, david, erin]) => {
       });
 
       assert.equal(String(await pairAC.balanceOf(carol)), parseEther("0.499373703104732887").toString());
-      console.info("Balance tokenA: " + formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18));
-      console.info("Balance WETH: " + formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18));
-      console.info("Balance tokenC: " + formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18));
+      console.info(`Balance tokenA: ${  formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance WETH: ${  formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance tokenC: ${  formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18)}`);
     });
 
     it("User completes zapIn with ETH (pair ETH/tokenC)", async function () {
@@ -235,15 +235,15 @@ contract("SectaZapV1", ([alice, bob, carol, david, erin]) => {
 
       expectEvent(result, "ZapIn", {
         tokenToZap: constants.ZERO_ADDRESS,
-        lpToken: lpToken,
+        lpToken,
         tokenAmountIn: parseEther("1").toString(),
         lpTokenAmountReceived: parseEther("4.992493116557219690").toString(),
         user: carol,
       });
 
-      console.info("Balance tokenA: " + formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18));
-      console.info("Balance WETH: " + formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18));
-      console.info("Balance tokenC: " + formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18));
+      console.info(`Balance tokenA: ${  formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance WETH: ${  formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance tokenC: ${  formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18)}`);
     });
 
     it("User completes zapInRebalancing with ETH (pair ETH/tokenC)", async function () {
@@ -281,16 +281,16 @@ contract("SectaZapV1", ([alice, bob, carol, david, erin]) => {
       expectEvent(result, "ZapInRebalancing", {
         token0ToZap: constants.ZERO_ADDRESS,
         token1ToZap: tokenC.address,
-        lpToken: lpToken,
+        lpToken,
         token0AmountIn: token0AmountIn.toString(),
         token1AmountIn: token1AmountIn.toString(),
         lpTokenAmountReceived: parseEther("7.495311264946730291").toString(),
         user: carol,
       });
 
-      console.info("Balance tokenA: " + formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18));
-      console.info("Balance WETH: " + formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18));
-      console.info("Balance tokenC: " + formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18));
+      console.info(`Balance tokenA: ${  formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance WETH: ${  formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance tokenC: ${  formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18)}`);
     });
 
     it("User completes zapInRebalancing with tokens (tokenA/tokenC)", async function () {
@@ -329,16 +329,16 @@ contract("SectaZapV1", ([alice, bob, carol, david, erin]) => {
       expectEvent(result, "ZapInRebalancing", {
         token0ToZap: tokenA.address,
         token1ToZap: tokenC.address,
-        lpToken: lpToken,
+        lpToken,
         token0AmountIn: token0AmountIn.toString(),
         token1AmountIn: token1AmountIn.toString(),
         lpTokenAmountReceived: "2995503304234356879808",
         user: carol,
       });
 
-      console.info("Balance tokenA: " + formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18));
-      console.info("Balance WETH: " + formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18));
-      console.info("Balance tokenC: " + formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18));
+      console.info(`Balance tokenA: ${  formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance WETH: ${  formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance tokenC: ${  formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18)}`);
     });
 
     it("User completes zapOut to token (tokenA/tokenC)", async function () {
@@ -356,16 +356,16 @@ contract("SectaZapV1", ([alice, bob, carol, david, erin]) => {
       });
 
       expectEvent(result, "ZapOut", {
-        lpToken: lpToken,
-        tokenToReceive: tokenToReceive,
+        lpToken,
+        tokenToReceive,
         lpTokenAmount: lpTokenAmount.toString(),
         tokenAmountReceived: parseEther("1.999586848572742784").toString(),
         user: carol,
       });
 
-      console.info("Balance tokenA: " + formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18));
-      console.info("Balance WETH: " + formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18));
-      console.info("Balance tokenC: " + formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18));
+      console.info(`Balance tokenA: ${  formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance WETH: ${  formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance tokenC: ${  formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18)}`);
     });
 
     it("User completes zapOut to ETH (ETH/tokenC)", async function () {
@@ -383,16 +383,16 @@ contract("SectaZapV1", ([alice, bob, carol, david, erin]) => {
       });
 
       expectEvent(result, "ZapOut", {
-        lpToken: lpToken,
+        lpToken,
         tokenToReceive: constants.ZERO_ADDRESS,
         lpTokenAmount: lpTokenAmount.toString(),
         tokenAmountReceived: parseEther("0.199890295552765397").toString(),
         user: carol,
       });
 
-      console.info("Balance tokenA: " + formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18));
-      console.info("Balance WETH: " + formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18));
-      console.info("Balance tokenC: " + formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18));
+      console.info(`Balance tokenA: ${  formatUnits(String(await tokenA.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance WETH: ${  formatUnits(String(await wrappedETH.balanceOf(sectaZap.address)), 18)}`);
+      console.info(`Balance tokenC: ${  formatUnits(String(await tokenC.balanceOf(sectaZap.address)), 18)}`);
     });
 
     it("Zap estimation fail if wrong tokens", async function () {

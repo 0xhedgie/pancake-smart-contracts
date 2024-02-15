@@ -29,7 +29,7 @@ library SectaLibrary {
                         hex"ff",
                         factory,
                         keccak256(abi.encodePacked(token0, token1)),
-                        hex"a5934690703a592a07e841ca29d5e5c79b5e22ed4749057bb216dc31100be1c0" // init code hash
+                        hex"5bed5de113e5cdda2845d157bae16c1ce9d8b68c025fe18acf567945ea631cee" // init code hash
                     )
                 )
             )
@@ -43,7 +43,6 @@ library SectaLibrary {
         address tokenB
     ) internal view returns (uint256 reserveA, uint256 reserveB) {
         (address token0, ) = sortTokens(tokenA, tokenB);
-        pairFor(factory, tokenA, tokenB);
         (uint256 reserve0, uint256 reserve1, ) = ISectaPair(pairFor(factory, tokenA, tokenB)).getReserves();
         (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
     }
