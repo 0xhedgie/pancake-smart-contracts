@@ -10,6 +10,9 @@ This repo contains all the contracts used in SectaFinance. It is divided in inde
 | [IFO](./projects/ifo)                                                 | Initial Farm Offerings.                                                                                                    | 0.6.12                   |
                                                                                 | 0.6.12 (v1) / 0.8.4 (v2) |
 
+**Note*:
+Other projects inside `projects` folder than `exchange-protocol` are not used for now. Those may not work properly. Tests are disabled. We have a plan to deploy those in the future.
+
 ## Create a new project
 
 1 - Create a new folder inside `projects` <br/>
