@@ -239,12 +239,7 @@ contract BunnySpecialLottery is Ownable {
             bool[] memory ticketStatuses;
             uint256 size;
 
-            (, , ticketStatuses, size) = sectaFiLottery.viewUserInfoForLotteryId(
-                _userAddress,
-                _lotteryId,
-                _cursor,
-                1
-            );
+            (, , ticketStatuses, size) = sectaFiLottery.viewUserInfoForLotteryId(_userAddress, _lotteryId, _cursor, 1);
 
             return size > 0 && ticketStatuses[0];
         }
