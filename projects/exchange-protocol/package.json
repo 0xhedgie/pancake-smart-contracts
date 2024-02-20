@@ -8,6 +8,7 @@
     "compile": "npx hardhat compile",
     "deploy:testnet": "npx hardhat run --network lineaGoerli scripts/deploy.ts",
     "deploy:mainnet": "npx hardhat run --network linea scripts/deploy.ts",
+    "verify:mainnet": "npx hardhat run --network linea scripts/verify.ts",
     "test": "npx hardhat test",
     "test:coverage": "npx hardhat coverage",
     "test:size-contracts": "npx hardhat size-contracts"
