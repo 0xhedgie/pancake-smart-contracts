@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -114,10 +115,10 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
         uint256 _startBlock,
         uint256 _endBlock,
         address _adminAddress
-    ) Ownable() ReentrancyGuard() {
+    ) public {
         require(IERC20(_lpToken).totalSupply() >= 0);
         require(IERC20(_offeringToken).totalSupply() >= 0);
-        require(_lpToken != _offeringToken, "Operations: Tokens must be be different");
+        require(_lpToken != _offeringToken, "Operations: Tokens must be different");
 
         lpToken = IERC20(_lpToken);
         offeringToken = IERC20(_offeringToken);
@@ -166,7 +167,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
         lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
 
         // Update the user status
-        _userInfo[msg.sender][_pid].amountPool = _userInfo[msg.sender][_pid].amountPool + _amount;
+        _userInfo[msg.sender][_pid].amountPool = _userInfo[msg.sender][_pid].amountPool.add(_amount);
 
         // Check if the pool has a limit per user
         if (_poolInformation[_pid].limitPerUserInLP > 0) {
@@ -178,7 +179,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
         }
 
         // Updates the totalAmount for pool
-        _poolInformation[_pid].totalAmountPool = _poolInformation[_pid].totalAmountPool + _amount;
+        _poolInformation[_pid].totalAmountPool = _poolInformation[_pid].totalAmountPool.add(_amount);
 
         emit Deposit(msg.sender, _amount, _pid);
     }
@@ -218,7 +219,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
 
         // Increment the sumTaxesOverflow
         if (userTaxOverflow > 0) {
-            _poolInformation[_pid].sumTaxesOverflow = _poolInformation[_pid].sumTaxesOverflow + userTaxOverflow;
+            _poolInformation[_pid].sumTaxesOverflow = _poolInformation[_pid].sumTaxesOverflow.add(userTaxOverflow);
         }
 
         // Transfer these tokens back to the user if quantity > 0
@@ -456,7 +457,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
         if (!_hasClaimedPoints[_user]) {
             uint256 sumPools;
             for (uint8 i = 0; i < numberPools; i++) {
-                sumPools = sumPools + _userInfo[msg.sender][i].amountPool;
+                sumPools = sumPools.add(_userInfo[msg.sender][i].amountPool);
             }
             if (sumPools > thresholdPoints) {
                 _hasClaimedPoints[_user] = true;
@@ -476,7 +477,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
         pure
         returns (uint256)
     {
-        uint256 ratioOverflow = _totalAmountPool / _raisingAmountPool;
+        uint256 ratioOverflow = _totalAmountPool.div(_raisingAmountPool);
 
         if (ratioOverflow >= 1500) {
             return 500000000; // 0.05%
@@ -520,13 +521,13 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
             uint256 allocation = _getUserAllocationPool(_user, _pid);
 
             // Calculate the offering amount for the user based on the offeringAmount for the pool
-            userOfferingAmount = (_poolInformation[_pid].offeringAmountPool * allocation) / (1e12);
+            userOfferingAmount = _poolInformation[_pid].offeringAmountPool.mul(allocation).div(1e12);
 
             // Calculate the payAmount
-            uint256 payAmount = (_poolInformation[_pid].raisingAmountPool * allocation) / (1e12);
+            uint256 payAmount = _poolInformation[_pid].raisingAmountPool.mul(allocation).div(1e12);
 
             // Calculate the pre-tax refunding amount
-            userRefundingAmount = _userInfo[_user][_pid].amountPool - payAmount;
+            userRefundingAmount = _userInfo[_user][_pid].amountPool.sub(payAmount);
 
             // Retrieve the tax rate
             if (_poolInformation[_pid].hasTax) {
@@ -536,18 +537,18 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
                 );
 
                 // Calculate the final taxAmount
-                taxAmount = (userRefundingAmount * (taxOverflow)) / (1e12);
+                taxAmount = userRefundingAmount.mul(taxOverflow).div(1e12);
 
                 // Adjust the refunding amount
-                userRefundingAmount = userRefundingAmount - (taxAmount);
+                userRefundingAmount = userRefundingAmount.sub(taxAmount);
             }
         } else {
             userRefundingAmount = 0;
             taxAmount = 0;
             // _userInfo[_user] / (raisingAmount / offeringAmount)
-            userOfferingAmount =
-                (_userInfo[_user][_pid].amountPool * _poolInformation[_pid].offeringAmountPool) /
-                (_poolInformation[_pid].raisingAmountPool);
+            userOfferingAmount = _userInfo[_user][_pid].amountPool.mul(_poolInformation[_pid].offeringAmountPool).div(
+                _poolInformation[_pid].raisingAmountPool
+            );
         }
         return (userOfferingAmount, userRefundingAmount, taxAmount);
     }
@@ -561,7 +562,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
      */
     function _getUserAllocationPool(address _user, uint8 _pid) internal view returns (uint256) {
         if (_poolInformation[_pid].totalAmountPool > 0) {
-            return (_userInfo[_user][_pid].amountPool * (1e18)) / (_poolInformation[_pid].totalAmountPool * (1e6));
+            return _userInfo[_user][_pid].amountPool.mul(1e18).div(_poolInformation[_pid].totalAmountPool).mul(1e6);
         } else {
             return 0;
         }

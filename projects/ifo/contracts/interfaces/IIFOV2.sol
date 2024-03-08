@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.15;
+pragma solidity ^0.6.12;
 
 /** @title IIFOV2.
  * @notice It is an interface for IFOV2.sol

@@ -8,18 +8,6 @@ import "solidity-coverage";
 import "dotenv/config";
 import "@nomicfoundation/hardhat-verify";
 
-const bscTestnet: NetworkUserConfig = {
-  url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
-  chainId: 97,
-  accounts: [process.env.KEY_TESTNET!],
-};
-
-const bscMainnet: NetworkUserConfig = {
-  url: "https://bsc-dataseed.binance.org/",
-  chainId: 56,
-  accounts: [process.env.KEY_MAINNET!],
-};
-
 const lineaTestnet: NetworkUserConfig = {
   url: "https://rpc.goerli.linea.build",
   chainId: 59140,
@@ -37,10 +25,10 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {},
     testnet: lineaTestnet,
-    // mainnet: lineaMainnet,
+    mainnet: lineaMainnet,
   },
   solidity: {
-    version: "0.8.15",
+    version: "0.6.12",
     settings: {
       optimizer: {
         enabled: true,
@@ -69,7 +57,7 @@ const config: HardhatUserConfig = {
         chainId: 59140,
         urls: {
           apiURL: "https://api-testnet.lineascan.build/api",
-          browserURL: "https://goerli.lineascan.build/address",
+          browserURL: "https://goerli.lineascan.build/",
         },
       },
     ],
