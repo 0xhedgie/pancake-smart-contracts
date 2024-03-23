@@ -6,17 +6,13 @@
   "private": true,
   "scripts": {
     "compile": "npx hardhat compile",
-    "test": "echo 'skip'",
+    "test": "npx hardhat test",
     "test:coverage": "npx hardhat coverage",
     "test:size-contracts": "npx hardhat size-contracts"
   },
-  "dependencies": {
-    "bsc-library": "1.0.0",
-    "profile-nft-gamification": "2.0.0",
-    "secta-cake-vault": "1.0.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@nomicfoundation/hardhat-verify": "^2.0.2",
-    "@openzeppelin/contracts": "^4.9.5"
+    "@openzeppelin/contracts": "3.4.2"
   }
 }

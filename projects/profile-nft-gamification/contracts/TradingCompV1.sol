@@ -3,8 +3,8 @@ pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "bsc-library/contracts/IERC20.sol";
-import "bsc-library/contracts/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 import "./interfaces/ISectaProfile.sol";
 import "./BunnyMintingStation.sol";

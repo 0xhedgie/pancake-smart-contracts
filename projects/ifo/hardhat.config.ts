@@ -49,7 +49,7 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      testnet: process.env.LINEASCAN_API_KEY!,
+      testnet: process.env.ETHERSCAN_API_KEY!,
     },
     customChains: [
       {

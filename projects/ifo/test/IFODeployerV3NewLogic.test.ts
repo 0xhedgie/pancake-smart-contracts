@@ -9,7 +9,6 @@ const IFODeployerV3 = artifacts.require("./IFODeployerV3.sol");
 
 const SectaProfile = artifacts.require("profile-nft-gamification/contracts/SectaProfile.sol");
 const MockERC20 = artifacts.require("./utils/MockERC20.sol");
-const MockERC20 = artifacts.require("./utils/MockERC20.sol");
 const MockBunnies = artifacts.require("./utils/MockBunnies.sol");
 
 const SectaToken = artifacts.require("secta-vault/contracts/test/SectaToken.sol");
@@ -31,41 +30,43 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
   let _endBlock;
 
   // IFO Pool 0
-  let offeringAmountPool0 = parseEther("50");
-  let raisingAmountPool0 = parseEther("5");
-  let limitPerUserInLp = parseEther("0.5");
+  const offeringAmountPool0 = parseEther("50");
+  const raisingAmountPool0 = parseEther("5");
+  const limitPerUserInLp = parseEther("0.5");
 
   // IFO Pool 1
-  let offeringAmountPool1 = parseEther("1000");
-  let raisingAmountPool1 = parseEther("100");
+  const offeringAmountPool1 = parseEther("1000");
+  const raisingAmountPool1 = parseEther("100");
 
   // offeringAmountPool0 + offeringAmountPool1
-  let offeringTotalAmount = offeringAmountPool0.add(offeringAmountPool1);
-  let raisingAmountTotal = parseEther("105");
+  const offeringTotalAmount = offeringAmountPool0.add(offeringAmountPool1);
+  const raisingAmountTotal = parseEther("105");
 
   // Gamification parameters
-  let campaignId = "12345678";
-  let numberPoints = "100";
-  let thresholdPoints = parseEther("0.035");
+  const campaignId = "12345678";
+  const numberPoints = "100";
+  const thresholdPoints = parseEther("0.035");
 
   // VARIABLES
 
   // Contracts
-  let mockBunnies,
-    mockSecta,
-    mockIFO,
-    mockOC,
-    mockLP,
-    sectaProfile,
-    deployer,
-    ifopool,
-    secta,
-    syrup,
-    masterchef,
-    rewardsStartBlock;
+  let mockBunnies;
+  let mockSecta;
+  let mockIFO;
+  let mockOC;
+  let mockLP;
+  let sectaProfile;
+  let deployer;
+  let ifopool;
+  let secta;
+  let syrup;
+  let masterchef;
+  let rewardsStartBlock;
 
   // Roles in SectaProfile
-  let DEFAULT_ADMIN_ROLE, NFT_ROLE, POINT_ROLE;
+  let DEFAULT_ADMIN_ROLE;
+  let NFT_ROLE;
+  let POINT_ROLE;
   // Generic result variable
   let result;
 
@@ -109,7 +110,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     await syrup.transferOwnership(masterchef.address, { from: frank });
     // grant all users credits
-    for (let user of [alice, bob, carol, david, erin, frank, frank, ...accounts]) {
+    for (const user of [alice, bob, carol, david, erin, frank, frank, ...accounts]) {
       // Mint secta to all users
       await secta.mint(user, ether("1000000"), { from: frank });
       // Approves secta to be spent by IFOPool
@@ -151,7 +152,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
     it("Bob/Carol/David/Erin create a profile in the system", async () => {
       let i = 0;
 
-      for (let thisUser of [bob, carol, david, erin]) {
+      for (const thisUser of [bob, carol, david, erin]) {
         // Mints 100 SECTA
         await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
 
@@ -179,7 +180,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
       }
 
       // 4 generic accounts too
-      for (let thisUser of accounts) {
+      for (const thisUser of accounts) {
         // Mints 100 SECTA
         await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
 
@@ -239,9 +240,9 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
         }
       );
 
-      let ifoAddress = result.receipt.logs[2].args[0];
+      const ifoAddress = result.receipt.logs[2].args[0];
 
-      expectEvent(result, "NewIFOContract", { ifoAddress: ifoAddress });
+      expectEvent(result, "NewIFOContract", { ifoAddress });
 
       mockIFO = await IFOInitializableV3.at(ifoAddress);
 
@@ -333,14 +334,14 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     it("All users are approving the tokens to be spent by the IFO", async () => {
       // Bob, Carol, David, Erin
-      for (let thisUser of [bob, carol, david, erin]) {
+      for (const thisUser of [bob, carol, david, erin]) {
         await mockLP.approve(mockIFO.address, parseEther("1000"), {
           from: thisUser,
         });
       }
 
       // 14 generic accounts too
-      for (let thisUser of accounts) {
+      for (const thisUser of accounts) {
         // Approves LP to be spent by mockIFO
         await mockLP.approve(mockIFO.address, parseEther("1000"), {
           from: thisUser,
@@ -360,7 +361,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
 
       await time.advanceBlockTo(2200);
 
-      let updateBlockResult = await mockIFO.updateStartAndEndBlocks(
+      const updateBlockResult = await mockIFO.updateStartAndEndBlocks(
         (await time.latestBlock()).toNumber() + 20,
         (await time.latestBlock()).toNumber() + 50,
         { from: alice }

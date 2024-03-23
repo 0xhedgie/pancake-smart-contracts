@@ -10,11 +10,7 @@ interface IIFOV2 {
      * @param _amount: the number of LP token used (18 decimals)
      * @param _pid: poolId
      */
-    function depositPool(
-        uint256 _amount,
-        uint8 _pid,
-        bytes32[] memory proof
-    ) external;
+    function depositPool(uint256 _amount, uint8 _pid) external;
 
     /**
      * @notice It allows users to harvest from pool
@@ -44,9 +40,7 @@ interface IIFOV2 {
         uint256 _raisingAmountPool,
         uint256 _limitPerUserInLP,
         bool _hasTax,
-        uint8 _pid,
-        bool _hasWhitelisting,
-        bytes32 _root
+        uint8 _pid
     ) external;
 
     /**

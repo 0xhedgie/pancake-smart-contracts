@@ -3,20 +3,21 @@ pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "./interfaces/IIFOV2.sol";
+import "./interfaces/IIFO.sol";
+import "./libraries/MerkleProof.sol";
 
 /**
  * @title IFOV2
  * @notice It is an upgrade of the original IFO model with 2 pools and
  * other SectaProfile requirements.
  */
-contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
+contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
+    using SafeMath for uint256;
 
     // The LP token used
     IERC20 public lpToken;
@@ -132,19 +133,13 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
      * @param _amount: the number of LP token used (18 decimals)
      * @param _pid: pool id
      */
-    function depositPool(
-        uint256 _amount,
-        uint8 _pid,
-        bytes32[] memory proof
-    ) external nonReentrant notContract {
-        // Checks whether the user is in a whitelist(merkle tree)
-        if (_poolInformation[_pid].hasWhitelisting) {
-            require(_poolInformation[_pid].root != bytes32(0), "Deposit: Merkle root not set");
-            bytes32 leaf = keccak256(bytes.concat(keccak256(abi.encode(msg.sender))));
-            bytes32 root = _poolInformation[_pid].root;
-            require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
-        }
+    function depositPool(uint256 _amount, uint8 _pid) external override nonReentrant notContract {
+        require(!_poolInformation[_pid].hasWhitelisting, "Deposit: Pool has whitelist");
 
+        _depositPool(_amount, _pid);
+    }
+
+    function _depositPool(uint256 _amount, uint8 _pid) internal {
         // Checks whether the pool id is valid
         require(_pid < numberPools, "Deposit: Non valid pool id");
 
@@ -155,10 +150,10 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
         );
 
         // Checks whether the block number is not too early
-        require(block.number > startBlock, "Deposit: Too early");
+        require(now > startBlock, "Deposit: Too early");
 
         // Checks whether the block number is not too late
-        require(block.number < endBlock, "Deposit: Too late");
+        require(now < endBlock, "Deposit: Too late");
 
         // Checks that the amount deposited is not inferior to 0
         require(_amount > 0, "Deposit: Amount must be > 0");
@@ -182,6 +177,27 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
         _poolInformation[_pid].totalAmountPool = _poolInformation[_pid].totalAmountPool.add(_amount);
 
         emit Deposit(msg.sender, _amount, _pid);
+    }
+
+    /**
+     * @notice It allows users to deposit LP tokens to pool
+     * @param _amount: the number of LP token used (18 decimals)
+     * @param _pid: pool id
+     */
+    function depositPool(
+        uint256 _amount,
+        uint8 _pid,
+        bytes32[] memory proof
+    ) external override nonReentrant notContract {
+        // Checks whether the user is in a whitelist(merkle tree)
+        if (_poolInformation[_pid].hasWhitelisting) {
+            require(_poolInformation[_pid].root != bytes32(0), "Deposit: Merkle root not set");
+            bytes32 leaf = keccak256(abi.encodePacked(keccak256(abi.encode(msg.sender))));
+            bytes32 root = _poolInformation[_pid].root;
+            require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
+        }
+
+        _depositPool(_amount, _pid);
     }
 
     /**
@@ -240,7 +256,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
      * @param _offerAmount: the number of offering amount to withdraw
      * @dev This function is only callable by admin.
      */
-    function finalWithdraw(uint256 _lpAmount, uint256 _offerAmount) external onlyOwner {
+    function finalWithdraw(uint256 _lpAmount, uint256 _offerAmount) external override onlyOwner {
         require(_lpAmount <= lpToken.balanceOf(address(this)), "Operations: Not enough LP tokens");
         require(_offerAmount <= offeringToken.balanceOf(address(this)), "Operations: Not enough offering tokens");
 
@@ -287,8 +303,8 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
         uint8 _pid,
         bool _hasWhitelisting,
         bytes32 _root
-    ) external onlyOwner {
-        require(block.number < startBlock, "Operations: IFO has started");
+    ) external override onlyOwner {
+        require(now < startBlock, "Operations: IFO has started");
         require(_pid < numberPools, "Operations: Pool does not exist");
 
         _poolInformation[_pid].offeringAmountPool = _offeringAmountPool;
@@ -312,7 +328,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
         uint256 _campaignId,
         uint256 _numberPoints,
         uint256 _thresholdPoints
-    ) external onlyOwner {
+    ) external override onlyOwner {
         require(block.number < endBlock, "Operations: IFO has ended");
         numberPoints = _numberPoints;
         campaignId = _campaignId;
@@ -328,9 +344,24 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
      * @dev This function is only callable by admin.
      */
     function updateStartAndEndBlocks(uint256 _startBlock, uint256 _endBlock) external onlyOwner {
-        require(block.number < startBlock, "Operations: IFO has started");
+        require(now < startBlock, "Operations: IFO has started");
         require(_startBlock < _endBlock, "Operations: New startBlock must be lower than new endBlock");
-        require(block.number < _startBlock, "Operations: New startBlock must be higher than current block");
+        require(now < _startBlock, "Operations: New startBlock must be higher than current block");
+
+        startBlock = _startBlock;
+        endBlock = _endBlock;
+
+        emit NewStartAndEndBlocks(_startBlock, _endBlock);
+    }
+
+    /**
+     * @notice It allows the admin to update start and end blocks
+     * @param _startBlock: the new start block
+     * @param _endBlock: the new end block
+     * @dev This function is only callable by admin. This is only for development.
+     */
+    function forceUpdateStartAndEndBlocks(uint256 _startBlock, uint256 _endBlock) external onlyOwner {
+        require(_startBlock < _endBlock, "Operations: New startBlock must be lower than new endBlock");
 
         startBlock = _startBlock;
         endBlock = _endBlock;
@@ -351,6 +382,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
     function viewPoolInformation(uint256 _pid)
         external
         view
+        override
         returns (
             uint256,
             uint256,
@@ -376,7 +408,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
      * @param _pid: poolId
      * @return It returns the tax percentage
      */
-    function viewPoolTaxRateOverflow(uint256 _pid) external view returns (uint256) {
+    function viewPoolTaxRateOverflow(uint256 _pid) external view override returns (uint256) {
         if (!_poolInformation[_pid].hasTax) {
             return 0;
         } else {
@@ -391,7 +423,12 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
      * @param _pids[]: array of pids
      * @return
      */
-    function viewUserAllocationPools(address _user, uint8[] calldata _pids) external view returns (uint256[] memory) {
+    function viewUserAllocationPools(address _user, uint8[] calldata _pids)
+        external
+        view
+        override
+        returns (uint256[] memory)
+    {
         uint256[] memory allocationPools = new uint256[](_pids.length);
         for (uint8 i = 0; i < _pids.length; i++) {
             allocationPools[i] = _getUserAllocationPool(_user, _pids[i]);
@@ -407,6 +444,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
     function viewUserInfo(address _user, uint8[] calldata _pids)
         external
         view
+        override
         returns (uint256[] memory, bool[] memory)
     {
         uint256[] memory amountPools = new uint256[](_pids.length);
@@ -427,6 +465,7 @@ contract IFOV2 is IIFOV2, ReentrancyGuard, Ownable {
     function viewUserOfferingAndRefundingAmountsForPools(address _user, uint8[] calldata _pids)
         external
         view
+        override
         returns (uint256[3][] memory)
     {
         uint256[3][] memory amountPools = new uint256[3][](_pids.length);

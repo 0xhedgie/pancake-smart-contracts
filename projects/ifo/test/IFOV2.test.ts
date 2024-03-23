@@ -5,12 +5,9 @@ import { assert } from "chai";
 import { BN, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 
 const IFOV2 = artifacts.require("./IFOV2.sol");
-const SectaProfile = artifacts.require("profile-nft-gamification/contracts/SectaProfile.sol");
 const MockERC20 = artifacts.require("./utils/MockERC20.sol");
-const MockERC20 = artifacts.require("./utils/MockERC20.sol");
-const MockBunnies = artifacts.require("./utils/MockBunnies.sol");
 
-contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
+contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) => {
   // SectaProfile
   const _totalInitSupply = parseEther("5000000"); // 50 SECTA
   const _numberSectaToReactivate = parseEther("5"); // 5 SECTA
@@ -42,120 +39,31 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
   // VARIABLES
 
   // Contracts
-  let mockBunnies, mockSecta, mockIFO, mockOC, mockLP, sectaProfile;
+  let mockSecta;
+  let mockIFO;
+  let mockOC;
+  let mockLP;
+
   // Roles in SectaProfile
-  let DEFAULT_ADMIN_ROLE, NFT_ROLE, POINT_ROLE;
+  let DEFAULT_ADMIN_ROLE;
+  let NFT_ROLE;
+  let POINT_ROLE;
   // Generic result variable
   let result;
 
-  before(async () => {
+  await before(async () => {
+    console.log("hi");
     // Deploy MockSECTA
     mockSecta = await MockERC20.new("Mock SECTA", "SECTA", _totalInitSupply);
-
+    console.log("hey");
     // Deploy MockLP
     mockLP = await MockERC20.new("Mock LP", "LP", _totalInitSupply, {
       from: alice,
     });
-
+    console.log("sup");
     // Deploy MockOfferingCoin (100M initial supply)
     mockOC = await MockERC20.new("Mock Offering Coin", "OC", parseEther("100000000"), {
       from: alice,
-    });
-
-    // Deploy Mock Bunnies
-    mockBunnies = await MockBunnies.new({ from: alice });
-
-    // Deploy Secta Profile
-    sectaProfile = await SectaProfile.new(
-      mockSecta.address,
-      _numberSectaToReactivate,
-      _numberSectaToRegister,
-      _numberSectaToUpdate,
-      { from: alice }
-    );
-
-    // Assign the roles
-    DEFAULT_ADMIN_ROLE = await sectaProfile.DEFAULT_ADMIN_ROLE();
-    NFT_ROLE = await sectaProfile.NFT_ROLE();
-    POINT_ROLE = await sectaProfile.POINT_ROLE();
-  });
-
-  describe("Initial contract parameters for all contracts", async () => {
-    it("SectaProfile is correct", async () => {
-      assert.equal(await sectaProfile.sectaToken(), mockSecta.address);
-      assert.equal(String(await sectaProfile.numberSectaToReactivate()), String(_numberSectaToReactivate));
-      assert.equal(String(await sectaProfile.numberSectaToRegister()), String(_numberSectaToRegister));
-      assert.equal(String(await sectaProfile.numberSectaToUpdate()), String(_numberSectaToUpdate));
-
-      assert.equal(await sectaProfile.getRoleMemberCount(DEFAULT_ADMIN_ROLE), "1");
-    });
-
-    it("Alice adds NFT and a team in the system", async () => {
-      await sectaProfile.addNftAddress(mockBunnies.address, {
-        from: alice,
-      });
-      await sectaProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
-        from: alice,
-      });
-    });
-
-    it("Bob/Carol/David/Erin create a profile in the system", async () => {
-      let i = 0;
-
-      for (let thisUser of [bob, carol, david, erin]) {
-        // Mints 100 SECTA
-        await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
-
-        // Mints 10,000 LP tokens
-        await mockLP.mintTokens(parseEther("10000"), { from: thisUser });
-
-        // Mints a NFT
-        result = await mockBunnies.mint({ from: thisUser });
-
-        // Approves the contract to receive his NFT
-        await mockBunnies.approve(sectaProfile.address, i, {
-          from: thisUser,
-        });
-
-        // Approves SECTA to be spent by SectaProfile
-        await mockSecta.approve(sectaProfile.address, parseEther("100"), {
-          from: thisUser,
-        });
-
-        // Creates the profile
-        await sectaProfile.createProfile("1", mockBunnies.address, i, {
-          from: thisUser,
-        });
-        i++;
-      }
-
-      // 4 generic accounts too
-      for (let thisUser of accounts) {
-        // Mints 100 SECTA
-        await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
-
-        // Mints 1,000 LP tokens
-        await mockLP.mintTokens(parseEther("1000"), { from: thisUser });
-
-        // Mnts a NFT
-        result = await mockBunnies.mint({ from: thisUser });
-
-        // Approves the contract to receive his NFT
-        await mockBunnies.approve(sectaProfile.address, i, {
-          from: thisUser,
-        });
-
-        // Approves SECTA to be spent by SectaProfile
-        await mockSecta.approve(sectaProfile.address, parseEther("100"), {
-          from: thisUser,
-        });
-
-        // Creates the profile
-        await sectaProfile.createProfile("1", mockBunnies.address, i, {
-          from: thisUser,
-        });
-        i++;
-      }
     });
   });
 
@@ -171,7 +79,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       _endBlock = new BN(await time.latestBlock()).add(new BN("350"));
 
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, sectaProfile.address, _startBlock, _endBlock, alice, {
+      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startBlock, _endBlock, alice, {
         from: alice,
       });
 
@@ -195,9 +103,6 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       await mockOC.transfer(mockIFO.address, offeringTotalAmount, {
         from: alice,
       });
-
-      // Grants point role to the IFO contract
-      await sectaProfile.grantRole(POINT_ROLE, mockIFO.address);
     });
 
     it("Mock IFO is deployed without pools set", async () => {
@@ -276,14 +181,14 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
 
     it("All users are approving the tokens to be spent by the IFO", async () => {
       // Bob, Carol, David, Erin
-      for (let thisUser of [bob, carol, david, erin]) {
+      for (const thisUser of [bob, carol, david, erin]) {
         await mockLP.approve(mockIFO.address, parseEther("1000"), {
           from: thisUser,
         });
       }
 
       // 14 generic accounts too
-      for (let thisUser of accounts) {
+      for (const thisUser of accounts) {
         // Approves LP to be spent by mockIFO
         await mockLP.approve(mockIFO.address, parseEther("1000"), {
           from: thisUser,
@@ -451,7 +356,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
     });
 
     it("14 accounts deposit in pool0", async () => {
-      for (let thisUser of accounts) {
+      for (const thisUser of accounts) {
         await mockIFO.depositPool(parseEther("0.5"), "0", { from: thisUser });
       }
 
@@ -551,7 +456,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       result = await mockIFO.viewPoolInformation(1);
       assert.equal(String(result[4]), String(parseEther("100")));
 
-      let expectedResult = amountDeposit.mul(1e12).div(parseEther("100"));
+      const expectedResult = amountDeposit.mul(1e12).div(parseEther("100"));
       result = await mockIFO.viewUserAllocationPools(accounts[0], [1]);
       assert.equal(result[0].toString(), expectedResult.toString());
     });
@@ -567,7 +472,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       result = await mockIFO.viewPoolInformation(1);
       assert.equal(String(result[4]), String(parseEther("400")));
 
-      let expectedResult = amountDeposit.mul(1e12).div(parseEther("400"));
+      const expectedResult = amountDeposit.mul(1e12).div(parseEther("400"));
       result = await mockIFO.viewUserAllocationPools(accounts[1], [1]);
       assert.equal(result[0].toString(), expectedResult.toString());
     });
@@ -583,7 +488,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       result = await mockIFO.viewPoolInformation(1);
       assert.equal(String(result[4]), String(parseEther("1000")));
 
-      let expectedResult = amountDeposit.mul(1e12).div(parseEther("1000"));
+      const expectedResult = amountDeposit.mul(1e12).div(parseEther("1000"));
       result = await mockIFO.viewUserAllocationPools(accounts[2], [1]);
       assert.equal(result[0].toString(), expectedResult.toString());
     });
@@ -627,12 +532,6 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
         pid: "0",
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
-        userAddress: bob,
-        numberPoints: String(numberPoints),
-        campaignId: String(campaignId),
-      });
-
       // Verify user balances changed accordingly
       const newOCBalance = new BN(await mockOC.balanceOf(bob));
       const changeOCBalance = newOCBalance.sub(previousOCBalance);
@@ -672,12 +571,6 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
         pid: "0",
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
-        userAddress: carol,
-        numberPoints: String(numberPoints),
-        campaignId: String(campaignId),
-      });
-
       // Verify user balances changed accordingly
       const newOCBalance = new BN(await mockOC.balanceOf(carol));
       const changeOCBalance = newOCBalance.sub(previousOCBalance);
@@ -710,9 +603,6 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
         excessAmount: String(parseEther("3.564")),
         pid: "1",
       });
-
-      // Verify Bob has not collected points twice
-      expectEvent.notEmitted.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease");
 
       const newOCBalance = new BN(await mockOC.balanceOf(bob));
       const changeOCBalance = newOCBalance.sub(previousOCBalance);
@@ -754,9 +644,6 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
         excessAmount: String(parseEther("4.455")),
         pid: "1",
       });
-
-      // Verify Carol has not collected points twice
-      expectEvent.notEmitted.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease");
 
       const newOCBalance = new BN(await mockOC.balanceOf(carol));
       const changeOCBalance = newOCBalance.sub(previousOCBalance);
@@ -1065,20 +952,20 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
 
     it("It is not possible to set an IFO with wrong ERC20 tokens", async () => {
       await expectRevert(
-        IFOV2.new(mockLP.address, mockLP.address, sectaProfile.address, _startBlock, _endBlock, alice, {
+        IFOV2.new(mockLP.address, mockLP.address, _startBlock, _endBlock, alice, {
           from: alice,
         }),
         "Operations: Tokens must be be different"
       );
       await expectRevert(
-        IFOV2.new(alice, mockOC.address, sectaProfile.address, _startBlock, _endBlock, alice, {
+        IFOV2.new(alice, mockOC.address, _startBlock, _endBlock, alice, {
           from: alice,
         }),
         "function call to a non-contract account"
       );
 
       await expectRevert(
-        IFOV2.new(mockLP.address, mockIFO.address, sectaProfile.address, _startBlock, _endBlock, alice, {
+        IFOV2.new(mockLP.address, mockIFO.address, _startBlock, _endBlock, alice, {
           from: alice,
         }),
         "function selector was not recognized and there's no fallback function"
@@ -1087,7 +974,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
 
     it("IFO is deployed correctly", async () => {
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, sectaProfile.address, _startBlock, _endBlock, alice, {
+      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startBlock, _endBlock, alice, {
         from: alice,
       });
 
@@ -1095,9 +982,6 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       await mockOC.transfer(mockIFO.address, offeringTotalAmount, {
         from: alice,
       });
-
-      // Grants point role to the IFO contract
-      await sectaProfile.grantRole(POINT_ROLE, mockIFO.address);
     });
 
     it("It is not possible to set a poolId > numberPools", async () => {
@@ -1153,7 +1037,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
 
     it("All users are approving the tokens to be spent by the IFO #2", async () => {
       // Bob, Carol, David, Erin
-      for (let thisUser of [bob, carol, david, erin]) {
+      for (const thisUser of [bob, carol, david, erin]) {
         await mockLP.approve(mockIFO.address, parseEther("1000"), {
           from: thisUser,
         });
@@ -1330,7 +1214,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       thresholdPoints = parseEther("0.2");
 
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, sectaProfile.address, _startBlock, _endBlock, alice, {
+      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startBlock, _endBlock, alice, {
         from: alice,
       });
 
@@ -1338,9 +1222,6 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       await mockOC.transfer(mockIFO.address, offeringAmountPool1, {
         from: alice,
       });
-
-      // Grants point role to the IFO contract
-      await sectaProfile.grantRole(POINT_ROLE, mockIFO.address);
 
       // Pool 1 is set
       await mockIFO.setPool(
@@ -1357,7 +1238,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       await mockIFO.updatePointParameters(campaignId, numberPoints, thresholdPoints, { from: alice });
 
       // Bob, Carol, David, Erin are approving the tokens to be spent by the IFO #3
-      for (let thisUser of [bob, carol, david, erin]) {
+      for (const thisUser of [bob, carol, david, erin]) {
         await mockLP.approve(mockIFO.address, parseEther("100000"), {
           from: thisUser,
         });
@@ -1377,7 +1258,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       result = await mockIFO.viewPoolInformation(1);
       assert.equal(String(result[4]), String(parseEther("12")));
 
-      let expectedResult = amountDeposit.mul(1e12).div(parseEther("12"));
+      const expectedResult = amountDeposit.mul(1e12).div(parseEther("12"));
       result = await mockIFO.viewUserAllocationPools(bob, [1]);
       assert.equal(result[0].toString(), expectedResult.toString());
     });
@@ -1541,7 +1422,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       thresholdPoints = parseEther("0.2");
 
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, sectaProfile.address, _startBlock, _endBlock, alice, {
+      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startBlock, _endBlock, alice, {
         from: alice,
       });
 
@@ -1551,9 +1432,6 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       });
 
       assert.equal(String(await mockOC.balanceOf(mockIFO.address)), String(parseUnits("5", numberDecimals)));
-
-      // Grants point role to the IFO contract
-      await sectaProfile.grantRole(POINT_ROLE, mockIFO.address);
 
       // Pool 1 is set
       await mockIFO.setPool(
@@ -1570,7 +1448,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       await mockIFO.updatePointParameters(campaignId, numberPoints, thresholdPoints, { from: alice });
 
       // Bob, Carol, David, Erin are approving the tokens to be spent by the IFO
-      for (let thisUser of [bob, carol, david, erin]) {
+      for (const thisUser of [bob, carol, david, erin]) {
         await mockLP.approve(mockIFO.address, parseEther("100000"), {
           from: thisUser,
         });
@@ -1590,7 +1468,7 @@ contract("IFO V2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
       result = await mockIFO.viewPoolInformation(1);
       assert.equal(String(result[4]), String(parseEther("12")));
 
-      let expectedResult = amountDeposit.mul(1e12).div(parseEther("12"));
+      const expectedResult = amountDeposit.mul(1e12).div(parseEther("12"));
       result = await mockIFO.viewUserAllocationPools(bob, [1]);
       assert.equal(result[0].toString(), expectedResult.toString());
     });

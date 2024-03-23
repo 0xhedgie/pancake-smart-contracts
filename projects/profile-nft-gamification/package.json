@@ -15,7 +15,6 @@
     "test:watch": "npx hardhat watch test"
   },
   "dependencies": {
-    "bsc-library": "1.0.0",
     "secta-cake-vault": "1.0.0"
   },
   "devDependencies": {

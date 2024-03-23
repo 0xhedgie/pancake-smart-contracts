@@ -4,8 +4,8 @@ pragma solidity 0.6.12;
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import "bsc-library/contracts/IERC20.sol";
-import "bsc-library/contracts/SafeERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 contract IFO is ReentrancyGuard {
     using SafeMath for uint256;
