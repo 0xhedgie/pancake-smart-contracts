@@ -54,11 +54,11 @@ const main = async () => {
     await ifoV2.setPool(
       offeringAmountPool0,
       raisingAmountPool0,
-      0,
+      0, // limit
       false, // tax
-      0,
-      true,
-      "0x3c5ba46dc852d541c2aec7fe5df494453a2195227eb54d9ab63ca0b552bbe66e",
+      0, // id
+      false,
+      ethers.constants.HashZero,
       { gasLimit: 1000000 }
     );
 
@@ -75,11 +75,11 @@ const main = async () => {
     await ifoV2.setPool(
       offeringAmountPool1,
       raisingAmountPool1,
-      0,
+      0, // limit
       false, // tax
-      1,
-      false,
-      ethers.constants.HashZero,
+      1, // id
+      true,
+      "0x4551caae2a6eac153a77a43e19c04344a830bde8dfd0f139a4c585fe0c6e619f",
       { gasLimit: 1000000 }
     );
   }

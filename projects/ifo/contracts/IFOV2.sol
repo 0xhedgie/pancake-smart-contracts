@@ -31,11 +31,11 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
     // Number of pools
     uint8 public constant numberPools = 2;
 
-    // The block number when IFO starts
-    uint256 public startBlock;
+    // The timestamp number when IFO starts
+    uint256 public startTimestamp;
 
-    // The block number when IFO ends
-    uint256 public endBlock;
+    // The timestamp number when IFO ends
+    uint256 public endTimestamp;
 
     // The campaignId for the IFO
     uint256 public campaignId;
@@ -85,8 +85,8 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
     // Harvest event
     event Harvest(address indexed user, uint256 offeringAmount, uint256 excessAmount, uint8 indexed pid);
 
-    // Event for new start & end blocks
-    event NewStartAndEndBlocks(uint256 startBlock, uint256 endBlock);
+    // Event for new start & end timestamps
+    event NewStartAndEndTimestamps(uint256 startTimestamp, uint256 endTimestamp);
 
     // Event with point parameters for IFO
     event PointParametersSet(uint256 campaignId, uint256 numberPoints, uint256 thresholdPoints);
@@ -106,15 +106,15 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
      * @dev It can only be called once.
      * @param _lpToken: the LP token used
      * @param _offeringToken: the token that is offered for the IFO
-     * @param _startBlock: the start block for the IFO
-     * @param _endBlock: the end block for the IFO
+     * @param _startTimestamp: the start timestamp for the IFO
+     * @param _endTimestamp: the end timestamp for the IFO
      * @param _adminAddress: the admin address for handling tokens
      */
     constructor(
         address _lpToken,
         address _offeringToken,
-        uint256 _startBlock,
-        uint256 _endBlock,
+        uint256 _startTimestamp,
+        uint256 _endTimestamp,
         address _adminAddress
     ) public {
         require(IERC20(_lpToken).totalSupply() >= 0);
@@ -123,8 +123,8 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
 
         lpToken = IERC20(_lpToken);
         offeringToken = IERC20(_offeringToken);
-        startBlock = _startBlock;
-        endBlock = _endBlock;
+        startTimestamp = _startTimestamp;
+        endTimestamp = _endTimestamp;
         transferOwnership(_adminAddress);
     }
 
@@ -149,11 +149,11 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
             "Deposit: Pool not set"
         );
 
-        // Checks whether the block number is not too early
-        require(now > startBlock, "Deposit: Too early");
+        // Checks whether the timestamp number is not too early
+        require(now > startTimestamp, "Deposit: Too early");
 
-        // Checks whether the block number is not too late
-        require(now < endBlock, "Deposit: Too late");
+        // Checks whether the timestamp number is not too late
+        require(now < endTimestamp, "Deposit: Too late");
 
         // Checks that the amount deposited is not inferior to 0
         require(_amount > 0, "Deposit: Amount must be > 0");
@@ -206,7 +206,7 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
      */
     function harvestPool(uint8 _pid) external override nonReentrant notContract {
         // Checks whether it is too early to harvest
-        require(block.number > endBlock, "Harvest: Too early");
+        require(now > endTimestamp, "Harvest: Too early");
 
         // Checks whether pool id is valid
         require(_pid < numberPools, "Harvest: Non valid pool id");
@@ -304,7 +304,7 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         bool _hasWhitelisting,
         bytes32 _root
     ) external override onlyOwner {
-        require(now < startBlock, "Operations: IFO has started");
+        require(now < startTimestamp, "Operations: IFO has started");
         require(_pid < numberPools, "Operations: Pool does not exist");
 
         _poolInformation[_pid].offeringAmountPool = _offeringAmountPool;
@@ -329,7 +329,7 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         uint256 _numberPoints,
         uint256 _thresholdPoints
     ) external override onlyOwner {
-        require(block.number < endBlock, "Operations: IFO has ended");
+        require(now < endTimestamp, "Operations: IFO has ended");
         numberPoints = _numberPoints;
         campaignId = _campaignId;
         thresholdPoints = _thresholdPoints;
@@ -338,35 +338,35 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @notice It allows the admin to update start and end blocks
-     * @param _startBlock: the new start block
-     * @param _endBlock: the new end block
+     * @notice It allows the admin to update start and end timestamps
+     * @param _startTimestamp: the new start timestamp
+     * @param _endTimestamp: the new end timestamp
      * @dev This function is only callable by admin.
      */
-    function updateStartAndEndBlocks(uint256 _startBlock, uint256 _endBlock) external onlyOwner {
-        require(now < startBlock, "Operations: IFO has started");
-        require(_startBlock < _endBlock, "Operations: New startBlock must be lower than new endBlock");
-        require(now < _startBlock, "Operations: New startBlock must be higher than current block");
+    function updateStartAndEndTimestamps(uint256 _startTimestamp, uint256 _endTimestamp) external onlyOwner {
+        require(now < startTimestamp, "Operations: IFO has started");
+        require(_startTimestamp < _endTimestamp, "Operations: New startTimestamp must be lower than new endTimestamp");
+        require(now < _startTimestamp, "Operations: New startTimestamp must be higher than current timestamp");
 
-        startBlock = _startBlock;
-        endBlock = _endBlock;
+        startTimestamp = _startTimestamp;
+        endTimestamp = _endTimestamp;
 
-        emit NewStartAndEndBlocks(_startBlock, _endBlock);
+        emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
     }
 
     /**
-     * @notice It allows the admin to update start and end blocks
-     * @param _startBlock: the new start block
-     * @param _endBlock: the new end block
+     * @notice It allows the admin to update start and end timestamps
+     * @param _startTimestamp: the new start timestamp
+     * @param _endTimestamp: the new end timestamp
      * @dev This function is only callable by admin. This is only for development.
      */
-    function forceUpdateStartAndEndBlocks(uint256 _startBlock, uint256 _endBlock) external onlyOwner {
-        require(_startBlock < _endBlock, "Operations: New startBlock must be lower than new endBlock");
+    function forceUpdateStartAndEndTimestamps(uint256 _startTimestamp, uint256 _endTimestamp) external onlyOwner {
+        require(_startTimestamp < _endTimestamp, "Operations: New startTimestamp must be lower than new endTimestamp");
 
-        startBlock = _startBlock;
-        endBlock = _endBlock;
+        startTimestamp = _startTimestamp;
+        endTimestamp = _endTimestamp;
 
-        emit NewStartAndEndBlocks(_startBlock, _endBlock);
+        emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
     }
 
     /**

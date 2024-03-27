@@ -51,16 +51,15 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
   // Generic result variable
   let result;
 
-  await before(async () => {
-    console.log("hi");
+  before(async () => {
     // Deploy MockSECTA
     mockSecta = await MockERC20.new("Mock SECTA", "SECTA", _totalInitSupply);
-    console.log("hey");
+
     // Deploy MockLP
     mockLP = await MockERC20.new("Mock LP", "LP", _totalInitSupply, {
       from: alice,
     });
-    console.log("sup");
+
     // Deploy MockOfferingCoin (100M initial supply)
     mockOC = await MockERC20.new("Mock Offering Coin", "OC", parseEther("100000000"), {
       from: alice,

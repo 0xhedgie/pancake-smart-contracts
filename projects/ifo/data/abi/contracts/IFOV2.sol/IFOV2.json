@@ -13,12 +13,12 @@
       },
       {
         "internalType": "uint256",
-        "name": "_startBlock",
+        "name": "_startTimestamp",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_endBlock",
+        "name": "_endTimestamp",
         "type": "uint256"
       },
       {
@@ -130,17 +130,17 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "startBlock",
+        "name": "startTimestamp",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "endBlock",
+        "name": "endTimestamp",
         "type": "uint256"
       }
     ],
-    "name": "NewStartAndEndBlocks",
+    "name": "NewStartAndEndTimestamps",
     "type": "event"
   },
   {
@@ -268,7 +268,7 @@
   },
   {
     "inputs": [],
-    "name": "endBlock",
+    "name": "endTimestamp",
     "outputs": [
       {
         "internalType": "uint256",
@@ -301,16 +301,16 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_startBlock",
+        "name": "_startTimestamp",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_endBlock",
+        "name": "_endTimestamp",
         "type": "uint256"
       }
     ],
-    "name": "forceUpdateStartAndEndBlocks",
+    "name": "forceUpdateStartAndEndTimestamps",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -463,7 +463,7 @@
   },
   {
     "inputs": [],
-    "name": "startBlock",
+    "name": "startTimestamp",
     "outputs": [
       {
         "internalType": "uint256",
@@ -527,16 +527,16 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_startBlock",
+        "name": "_startTimestamp",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_endBlock",
+        "name": "_endTimestamp",
         "type": "uint256"
       }
     ],
-    "name": "updateStartAndEndBlocks",
+    "name": "updateStartAndEndTimestamps",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
