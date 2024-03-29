@@ -32,3 +32,5 @@ coverage.json
 Flatten*
 
 .idea
+
+.vscode

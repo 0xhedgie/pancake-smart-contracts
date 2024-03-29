@@ -19,10 +19,10 @@ export default {
   },
   StartBlock: {
     mainnet: "0", // TO BE REPLACED
-    testnet: "1711374227",
+    testnet: "1711560000",
   },
   EndBlock: {
     mainnet: "0", // TO BE REPLACED
-    testnet: "1711377827",
+    testnet: "1711668000",
   },
 };

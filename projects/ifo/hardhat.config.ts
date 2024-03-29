@@ -21,7 +21,7 @@ const lineaMainnet: NetworkUserConfig = {
 };
 
 const config: HardhatUserConfig = {
-  defaultNetwork: "testnet",
+  defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
     testnet: lineaTestnet,

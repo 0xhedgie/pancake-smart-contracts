@@ -63,8 +63,8 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         bool hasTax; // tax on the overflow (if any, it works with _calculateTaxOverflow)
         uint256 totalAmountPool; // total amount pool deposited (in LP tokens)
         uint256 sumTaxesOverflow; // total taxes collected (starts at 0, increases with each harvest if overflow)
-        bool hasWhitelisting; // if the pool has a whitelisting
-        bytes32 root; // merkle root
+        bool isPrivate; // if the pool is private
+        bytes32 merkleRoot; // merkle merkleRoot
     }
 
     // Struct that contains each user information for both pools
@@ -134,7 +134,7 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
      * @param _pid: pool id
      */
     function depositPool(uint256 _amount, uint8 _pid) external override nonReentrant notContract {
-        require(!_poolInformation[_pid].hasWhitelisting, "Deposit: Pool has whitelist");
+        require(!_poolInformation[_pid].isPrivate, "Deposit: Pool is private");
 
         _depositPool(_amount, _pid);
     }
@@ -184,17 +184,17 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
      * @param _amount: the number of LP token used (18 decimals)
      * @param _pid: pool id
      */
-    function depositPool(
+    function depositPoolPrivate(
         uint256 _amount,
         uint8 _pid,
         bytes32[] memory proof
     ) external override nonReentrant notContract {
-        // Checks whether the user is in a whitelist(merkle tree)
-        if (_poolInformation[_pid].hasWhitelisting) {
-            require(_poolInformation[_pid].root != bytes32(0), "Deposit: Merkle root not set");
+        // Checks if the user is in the merkle tree
+        if (_poolInformation[_pid].isPrivate) {
+            require(_poolInformation[_pid].merkleRoot != bytes32(0), "Deposit: Merkle merkleRoot not set");
             bytes32 leaf = keccak256(abi.encodePacked(keccak256(abi.encode(msg.sender))));
-            bytes32 root = _poolInformation[_pid].root;
-            require(MerkleProof.verify(proof, root, leaf), "Invalid proof");
+            bytes32 merkleRoot = _poolInformation[_pid].merkleRoot;
+            require(MerkleProof.verify(proof, merkleRoot, leaf), "Deposit: Invalid proof");
         }
 
         _depositPool(_amount, _pid);
@@ -300,10 +300,20 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         uint256 _raisingAmountPool,
         uint256 _limitPerUserInLP,
         bool _hasTax,
-        uint8 _pid,
-        bool _hasWhitelisting,
-        bytes32 _root
+        uint8 _pid
     ) external override onlyOwner {
+        _setPool(_offeringAmountPool, _raisingAmountPool, _limitPerUserInLP, _hasTax, _pid, false, bytes32(0));
+    }
+
+    function _setPool(
+        uint256 _offeringAmountPool,
+        uint256 _raisingAmountPool,
+        uint256 _limitPerUserInLP,
+        bool _hasTax,
+        uint8 _pid,
+        bool _isPrivate,
+        bytes32 _root
+    ) internal {
         require(now < startTimestamp, "Operations: IFO has started");
         require(_pid < numberPools, "Operations: Pool does not exist");
 
@@ -311,10 +321,31 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         _poolInformation[_pid].raisingAmountPool = _raisingAmountPool;
         _poolInformation[_pid].limitPerUserInLP = _limitPerUserInLP;
         _poolInformation[_pid].hasTax = _hasTax;
-        _poolInformation[_pid].hasWhitelisting = _hasWhitelisting;
-        _poolInformation[_pid].root = _root;
 
         emit PoolParametersSet(_offeringAmountPool, _raisingAmountPool, _pid);
+    }
+
+    /**
+     * @notice It sets parameters for pool
+     * @param _offeringAmountPool: offering amount (in tokens)
+     * @param _raisingAmountPool: raising amount (in LP tokens)
+     * @param _limitPerUserInLP: limit per user (in LP tokens)
+     * @param _hasTax: if the pool has a tax
+     * @param _pid: pool id
+     * @dev This function is only callable by admin.
+     */
+    function setPoolPrivate(
+        uint256 _offeringAmountPool,
+        uint256 _raisingAmountPool,
+        uint256 _limitPerUserInLP,
+        bool _hasTax,
+        uint8 _pid,
+        bool _isPrivate,
+        bytes32 _root
+    ) external override onlyOwner {
+        require(_isPrivate, "Operations: Private pool");
+        require(_root != bytes32(0), "Operations: Empty merkle root");
+        _setPool(_offeringAmountPool, _raisingAmountPool, _limitPerUserInLP, _hasTax, _pid, _isPrivate, _root);
     }
 
     /**
@@ -389,7 +420,8 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
             uint256,
             bool,
             uint256,
-            uint256
+            uint256,
+            bytes32
         )
     {
         return (
@@ -398,7 +430,8 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
             _poolInformation[_pid].limitPerUserInLP,
             _poolInformation[_pid].hasTax,
             _poolInformation[_pid].totalAmountPool,
-            _poolInformation[_pid].sumTaxesOverflow
+            _poolInformation[_pid].sumTaxesOverflow,
+            _poolInformation[_pid].merkleRoot
         );
     }
 

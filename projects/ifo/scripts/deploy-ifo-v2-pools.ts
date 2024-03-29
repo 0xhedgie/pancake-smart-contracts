@@ -1,4 +1,6 @@
 import { ethers, network, run } from "hardhat";
+import { verifyContract } from "@sectafi/common/verify";
+import { sleep } from "@sectafi/common/sleep";
 import config from "../config";
 
 const main = async () => {
@@ -36,6 +38,15 @@ const main = async () => {
 
     await ifoV2.deployed();
     console.log("IFOV2 deployed to:", ifoV2.address);
+
+    await verifyContract(ifoV2.address, [
+      config.LPToken[name],
+      config.OfferingToken[name],
+      config.StartBlock[name],
+      config.EndBlock[name],
+      config.AdminAddress[name],
+    ]);
+    await sleep(10000);
 
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     const offeringToken = MockERC20.attach(config.OfferingToken[name]);

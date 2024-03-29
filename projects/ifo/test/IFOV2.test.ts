@@ -14,9 +14,9 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
   const _numberSectaToRegister = parseEther("5"); // 5 SECTA
   const _numberSectaToUpdate = parseEther("2"); // 2 SECTA
 
-  // IFO block times
-  let _startBlock;
-  let _endBlock;
+  // IFO timestamps
+  let _startTimestamp;
+  let _endTimestamp;
 
   // IFO Pool 0
   let offeringAmountPool0 = parseEther("50");
@@ -74,29 +74,30 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
   describe("IFO #1 - Initial set up", async () => {
     it("The IFO #1 is deployed and initialized", async () => {
-      _startBlock = new BN(await time.latestBlock()).add(new BN("50"));
-      _endBlock = new BN(await time.latestBlock()).add(new BN("350"));
+      _startTimestamp = new BN(await time.latest()).add(new BN("50"));
+      _endTimestamp = new BN(await time.latest()).add(new BN("350"));
 
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startBlock, _endBlock, alice, {
+      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
       });
 
       await expectRevert(
-        mockIFO.updateStartAndEndBlocks("195", "180", { from: alice }),
-        "Operations: New startBlock must be lower than new endBlock"
+        mockIFO.updateStartAndEndTimestamps("195", "180", { from: alice }),
+        "Operations: New startTimestamp must be lower than new endTimestamp"
       );
 
-      const blockNumber = new BN(await time.latestBlock()).sub(new BN("2"));
+      const timestamp = new BN(await time.latest()).sub(new BN("2"));
+      const endTimestamp = timestamp.add(new BN("1000"));
 
       await expectRevert(
-        mockIFO.updateStartAndEndBlocks(blockNumber.toString(), "50000", { from: alice }),
-        "Operations: New startBlock must be higher than current block"
+        mockIFO.updateStartAndEndTimestamps(timestamp.toString(), endTimestamp.toString(), { from: alice }),
+        "Operations: New startTimestamp must be higher than current timestamp"
       );
 
-      result = await mockIFO.updateStartAndEndBlocks(_startBlock, _endBlock, { from: alice });
+      result = await mockIFO.updateStartAndEndTimestamps(_startTimestamp, _endTimestamp, { from: alice });
 
-      expectEvent(result, "NewStartAndEndBlocks", { startBlock: _startBlock, endBlock: _endBlock });
+      expectEvent(result, "NewStartAndEndTimestamps", { startTimestamp: _startTimestamp, endTimestamp: _endTimestamp });
 
       // Transfer the offering total amount (sum of the 2 pools)
       await mockOC.transfer(mockIFO.address, offeringTotalAmount, {
@@ -152,12 +153,14 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("0")), "0");
 
-      result = await mockIFO.setPool(
+      result = await mockIFO.setPoolPrivate(
         offeringAmountPool1,
         raisingAmountPool1,
         "0",
         true, // tax
         "1",
+        true,
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
         { from: alice }
       );
 
@@ -197,14 +200,10 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
   });
 
   describe("IFO #1 - OVERFLOW FOR BOTH POOLS", async () => {
-    it("User cannot deposit without a profile", async () => {
-      await expectRevert(
-        mockIFO.depositPool(parseEther("0.6"), "0", { from: frank }),
-        "Deposit: Must have an active profile"
-      );
+    it("User cannot deposit without proof if private", async () => {
       await expectRevert(
         mockIFO.depositPool(parseEther("0.6"), "1", { from: frank }),
-        "Deposit: Must have an active profile"
+        "Deposit: Pool is private"
       );
     });
 
@@ -216,7 +215,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       await expectRevert(mockIFO.depositPool(parseEther("0.6"), "0", { from: bob }), "Deposit: Too early");
       await expectRevert(mockIFO.depositPool(parseEther("0.6"), "1", { from: bob }), "Deposit: Too early");
 
-      await time.advanceBlockTo(_startBlock);
+      await time.increaseTo(_startTimestamp);
     });
 
     it("User cannot deposit in pools if amount is 0", async () => {
@@ -494,7 +493,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Cannot harvest before end of the IFO", async () => {
       await expectRevert(mockIFO.harvestPool("0", { from: bob }), "Harvest: Too early");
-      await time.advanceBlockTo(_endBlock);
+      await time.increaseTo(_endTimestamp);
     });
 
     it("Cannot harvest with wrong pool id", async () => {
@@ -830,8 +829,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       });
     });
 
-    it("It is not possible to change IFO start/end blocks after start", async () => {
-      await expectRevert(mockIFO.updateStartAndEndBlocks("1", "2", { from: alice }), "Operations: IFO has started");
+    it("It is not possible to change IFO start/end timestamps after start", async () => {
+      await expectRevert(mockIFO.updateStartAndEndTimestamps("1", "2", { from: alice }), "Operations: IFO has started");
     });
 
     it("It is not possible to change IFO parameters after start", async () => {
@@ -912,7 +911,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         "Ownable: caller is not the owner"
       );
       await expectRevert(
-        mockIFO.updateStartAndEndBlocks("1", "2", { from: carol }),
+        mockIFO.updateStartAndEndTimestamps("1", "2", { from: carol }),
         "Ownable: caller is not the owner"
       );
     });
@@ -926,9 +925,9 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
   describe("IFO #2 - UNDERFLOW FOR BOTH POOLS", async () => {
     it("The IFO #2 is deployed and initialized", async () => {
-      // IFO block times
-      _startBlock = new BN(await time.latestBlock()).add(new BN("50"));
-      _endBlock = new BN(await time.latestBlock()).add(new BN("250"));
+      // IFO timestamps
+      _startTimestamp = new BN(await time.latest()).add(new BN("50"));
+      _endTimestamp = new BN(await time.latest()).add(new BN("250"));
 
       // IFO Pool 0
       offeringAmountPool0 = parseEther("50");
@@ -951,20 +950,20 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("It is not possible to set an IFO with wrong ERC20 tokens", async () => {
       await expectRevert(
-        IFOV2.new(mockLP.address, mockLP.address, _startBlock, _endBlock, alice, {
+        IFOV2.new(mockLP.address, mockLP.address, _startTimestamp, _endTimestamp, alice, {
           from: alice,
         }),
         "Operations: Tokens must be be different"
       );
       await expectRevert(
-        IFOV2.new(alice, mockOC.address, _startBlock, _endBlock, alice, {
+        IFOV2.new(alice, mockOC.address, _startTimestamp, _endTimestamp, alice, {
           from: alice,
         }),
         "function call to a non-contract account"
       );
 
       await expectRevert(
-        IFOV2.new(mockLP.address, mockIFO.address, _startBlock, _endBlock, alice, {
+        IFOV2.new(mockLP.address, mockIFO.address, _startTimestamp, _endTimestamp, alice, {
           from: alice,
         }),
         "function selector was not recognized and there's no fallback function"
@@ -973,7 +972,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("IFO is deployed correctly", async () => {
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startBlock, _endBlock, alice, {
+      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
       });
 
@@ -1044,8 +1043,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("Users deposit some LP in pool0", async () => {
-      // Advance to _startBlock
-      await time.advanceBlockTo(_startBlock);
+      // Advance to _startTimestamp
+      await time.increaseTo(_startTimestamp);
 
       await mockIFO.depositPool(parseEther("0.4"), "0", { from: bob });
       await mockIFO.depositPool(parseEther("0.5"), "0", { from: carol });
@@ -1068,8 +1067,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("Users harvest LP from pool 0", async () => {
-      // Advance to _endBlock
-      await time.advanceBlockTo(_endBlock);
+      // Advance to _endTimestamp
+      await time.increaseTo(_endTimestamp);
 
       // 8% (0.4/5) of 50 = 4 OC
       result = await mockIFO.harvestPool("0", { from: bob });
@@ -1199,9 +1198,9 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
   describe("IFO #3 - OVERFLOW x500 // 1 POOL WITH TAX", async () => {
     it("The IFO #3 is deployed and initialized", async () => {
-      // IFO block times
-      _startBlock = new BN(await time.latestBlock()).add(new BN("50"));
-      _endBlock = new BN(await time.latestBlock()).add(new BN("250"));
+      // IFO timestamps
+      _startTimestamp = new BN(await time.latest()).add(new BN("50"));
+      _endTimestamp = new BN(await time.latest()).add(new BN("250"));
 
       // IFO Pool 1
       offeringAmountPool1 = parseEther("5");
@@ -1213,7 +1212,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       thresholdPoints = parseEther("0.2");
 
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startBlock, _endBlock, alice, {
+      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
       });
 
@@ -1245,7 +1244,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("Whale (Bob) deposits 12 LP in pool1", async () => {
-      await time.advanceBlockTo(_startBlock);
+      await time.increaseTo(_startTimestamp);
 
       const amountDeposit = parseEther("12");
       await mockIFO.depositPool(amountDeposit, "1", { from: bob });
@@ -1346,8 +1345,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("Users harvest LP from pool 1", async () => {
-      // Advance to _endBlock
-      await time.advanceBlockTo(_endBlock);
+      // Advance to _endTimestamp
+      await time.increaseTo(_endTimestamp);
 
       result = await mockIFO.harvestPool("1", { from: bob });
 
@@ -1407,9 +1406,9 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         from: alice,
       });
 
-      // IFO block times
-      _startBlock = new BN(await time.latestBlock()).add(new BN("50"));
-      _endBlock = new BN(await time.latestBlock()).add(new BN("250"));
+      // IFO timestamps
+      _startTimestamp = new BN(await time.latest()).add(new BN("50"));
+      _endTimestamp = new BN(await time.latest()).add(new BN("250"));
 
       // IFO Pool 1
       offeringAmountPool1 = parseUnits("5", numberDecimals);
@@ -1421,7 +1420,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       thresholdPoints = parseEther("0.2");
 
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startBlock, _endBlock, alice, {
+      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
       });
 
@@ -1455,7 +1454,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("Whale (Bob) deposits 12 LP in pool1", async () => {
-      await time.advanceBlockTo(_startBlock);
+      await time.increaseTo(_startTimestamp);
 
       const amountDeposit = parseEther("12");
       await mockIFO.depositPool(amountDeposit, "1", { from: bob });
@@ -1556,8 +1555,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("Users harvest LP from pool 1", async () => {
-      // Advance to _endBlock
-      await time.advanceBlockTo(_endBlock);
+      // Advance to _endTimestamp
+      await time.increaseTo(_endTimestamp);
 
       result = await mockIFO.harvestPool("1", { from: bob });
 

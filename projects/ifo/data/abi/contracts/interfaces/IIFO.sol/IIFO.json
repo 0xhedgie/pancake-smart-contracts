@@ -35,7 +35,7 @@
         "type": "bytes32[]"
       }
     ],
-    "name": "depositPool",
+    "name": "depositPoolPrivate",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -97,6 +97,39 @@
         "internalType": "uint8",
         "name": "_pid",
         "type": "uint8"
+      }
+    ],
+    "name": "setPool",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "_offeringAmountPool",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_raisingAmountPool",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_limitPerUserInLP",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bool",
+        "name": "_hasTax",
+        "type": "bool"
+      },
+      {
+        "internalType": "uint8",
+        "name": "_pid",
+        "type": "uint8"
       },
       {
         "internalType": "bool",
@@ -109,7 +142,7 @@
         "type": "bytes32"
       }
     ],
-    "name": "setPool",
+    "name": "setPoolPrivate",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -176,6 +209,11 @@
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",

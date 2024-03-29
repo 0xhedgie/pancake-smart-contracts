@@ -17,7 +17,7 @@ interface IIFO {
      * @param _amount: the number of LP token used (18 decimals)
      * @param _pid: poolId
      */
-    function depositPool(
+    function depositPoolPrivate(
         uint256 _amount,
         uint8 _pid,
         bytes32[] memory proof
@@ -47,6 +47,23 @@ interface IIFO {
      * @dev This function is only callable by admin.
      */
     function setPool(
+        uint256 _offeringAmountPool,
+        uint256 _raisingAmountPool,
+        uint256 _limitPerUserInLP,
+        bool _hasTax,
+        uint8 _pid
+    ) external;
+
+    /**
+     * @notice It sets parameters for pool
+     * @param _offeringAmountPool: offering amount (in tokens)
+     * @param _raisingAmountPool: raising amount (in LP tokens)
+     * @param _limitPerUserInLP: limit per user (in LP tokens)
+     * @param _hasTax: if the pool has a tax
+     * @param _pid: poolId
+     * @dev This function is only callable by admin.
+     */
+    function setPoolPrivate(
         uint256 _offeringAmountPool,
         uint256 _raisingAmountPool,
         uint256 _limitPerUserInLP,
@@ -82,7 +99,8 @@ interface IIFO {
             uint256,
             bool,
             uint256,
-            uint256
+            uint256,
+            bytes32
         );
 
     /**
