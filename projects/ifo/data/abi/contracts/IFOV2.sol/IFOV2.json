@@ -329,6 +329,25 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "_pid",
+        "type": "uint8"
+      }
+    ],
+    "name": "isPrivate",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "lpToken",
     "outputs": [

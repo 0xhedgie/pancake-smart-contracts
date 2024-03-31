@@ -10,7 +10,9 @@
     "test:coverage": "npx hardhat coverage",
     "test:size-contracts": "npx hardhat size-contracts"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@openzeppelin/merkle-tree": "^1.0.6"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-verify": "^2.0.2",
     "@openzeppelin/contracts": "3.4.2"

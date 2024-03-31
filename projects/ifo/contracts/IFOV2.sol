@@ -128,21 +128,25 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         transferOwnership(_adminAddress);
     }
 
+    function isPrivate(uint8 _pid) external view returns (bool) {
+        return _poolInformation[_pid].isPrivate;
+    }
+
     /**
      * @notice It allows users to deposit LP tokens to pool
      * @param _amount: the number of LP token used (18 decimals)
      * @param _pid: pool id
      */
     function depositPool(uint256 _amount, uint8 _pid) external override nonReentrant notContract {
+        // Checks whether the pool id is valid
+        require(_pid < numberPools, "Deposit: Non valid pool id");
+
         require(!_poolInformation[_pid].isPrivate, "Deposit: Pool is private");
 
         _depositPool(_amount, _pid);
     }
 
     function _depositPool(uint256 _amount, uint8 _pid) internal {
-        // Checks whether the pool id is valid
-        require(_pid < numberPools, "Deposit: Non valid pool id");
-
         // Checks that pool was set
         require(
             _poolInformation[_pid].offeringAmountPool > 0 && _poolInformation[_pid].raisingAmountPool > 0,
@@ -189,6 +193,9 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         uint8 _pid,
         bytes32[] memory proof
     ) external override nonReentrant notContract {
+        // Checks whether the pool id is valid
+        require(_pid < numberPools, "Deposit: Non valid pool id");
+
         // Checks if the user is in the merkle tree
         if (_poolInformation[_pid].isPrivate) {
             require(_poolInformation[_pid].merkleRoot != bytes32(0), "Deposit: Merkle merkleRoot not set");
@@ -321,6 +328,9 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         _poolInformation[_pid].raisingAmountPool = _raisingAmountPool;
         _poolInformation[_pid].limitPerUserInLP = _limitPerUserInLP;
         _poolInformation[_pid].hasTax = _hasTax;
+
+        _poolInformation[_pid].isPrivate = _isPrivate;
+        _poolInformation[_pid].merkleRoot = _root;
 
         emit PoolParametersSet(_offeringAmountPool, _raisingAmountPool, _pid);
     }
@@ -634,7 +644,7 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
      */
     function _getUserAllocationPool(address _user, uint8 _pid) internal view returns (uint256) {
         if (_poolInformation[_pid].totalAmountPool > 0) {
-            return _userInfo[_user][_pid].amountPool.mul(1e18).div(_poolInformation[_pid].totalAmountPool).mul(1e6);
+            return _userInfo[_user][_pid].amountPool.mul(1e18).div(_poolInformation[_pid].totalAmountPool).div(1e6);
         } else {
             return 0;
         }

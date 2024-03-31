@@ -1,11 +1,16 @@
+/* eslint-disable no-await-in-loop */
+/* eslint-disable no-restricted-syntax */
 import { parseUnits, parseEther } from "ethers/lib/utils";
 import { artifacts, contract } from "hardhat";
 
 import { assert } from "chai";
 import { BN, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 
+import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
+
 const IFOV2 = artifacts.require("./IFOV2.sol");
 const MockERC20 = artifacts.require("./utils/MockERC20.sol");
+const MockERC20Decimals = artifacts.require("./utils/MockERC20Decimals.sol");
 
 contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) => {
   // SectaProfile
@@ -26,6 +31,11 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
   // IFO Pool 1
   let offeringAmountPool1 = parseEther("1000");
   let raisingAmountPool1 = parseEther("100");
+
+  let merkleTree;
+  let merkleProofMap;
+
+  const emptyHash = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
   // offeringAmountPool0 + offeringAmountPool1
   let offeringTotalAmount = parseEther("1050");
@@ -63,6 +73,36 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     // Deploy MockOfferingCoin (100M initial supply)
     mockOC = await MockERC20.new("Mock Offering Coin", "OC", parseEther("100000000"), {
       from: alice,
+    });
+
+    const values = [[bob], [carol], [david], [accounts[0]], [accounts[1]], [accounts[2]]];
+
+    merkleTree = StandardMerkleTree.of(values, ["address"]);
+
+    merkleProofMap = new Map();
+    for (const [i, v] of merkleTree.entries()) {
+      merkleProofMap.set(v[0], merkleTree.getProof(i));
+    }
+  });
+
+  describe("Initial contract parameters for all contracts", async () => {
+    it("Bob/Carol/David/Erin create a profile in the system", async () => {
+      for (const thisUser of [bob, carol, david, erin]) {
+        // Mints 100 CAKE
+        await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
+
+        // Mints 10,000 LP tokens
+        await mockLP.mintTokens(parseEther("10000"), { from: thisUser });
+      }
+
+      // 4 generic accounts too
+      for (const thisUser of accounts) {
+        // Mints 100 CAKE
+        await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
+
+        // Mints 1,000 LP tokens
+        await mockLP.mintTokens(parseEther("1000"), { from: thisUser });
+      }
     });
   });
 
@@ -160,7 +200,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         true, // tax
         "1",
         true,
-        "0x0000000000000000000000000000000000000000000000000000000000000000",
+        merkleTree.root,
         { from: alice }
       );
 
@@ -201,10 +241,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
   describe("IFO #1 - OVERFLOW FOR BOTH POOLS", async () => {
     it("User cannot deposit without proof if private", async () => {
-      await expectRevert(
-        mockIFO.depositPool(parseEther("0.6"), "1", { from: frank }),
-        "Deposit: Pool is private"
-      );
+      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "1", { from: frank }), "Deposit: Pool is private");
     });
 
     it("User cannot deposit if Deposit: Too early", async () => {
@@ -213,14 +250,35 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       });
 
       await expectRevert(mockIFO.depositPool(parseEther("0.6"), "0", { from: bob }), "Deposit: Too early");
-      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "1", { from: bob }), "Deposit: Too early");
+      await expectRevert(
+        mockIFO.depositPoolPrivate(parseEther("0.6"), "1", merkleProofMap.get(bob), { from: bob }),
+        "Deposit: Too early"
+      );
 
       await time.increaseTo(_startTimestamp);
     });
 
     it("User cannot deposit in pools if amount is 0", async () => {
       await expectRevert(mockIFO.depositPool(parseEther("0"), "0", { from: bob }), "Deposit: Amount must be > 0");
-      await expectRevert(mockIFO.depositPool(parseEther("0"), "1", { from: bob }), "Deposit: Amount must be > 0");
+      await expectRevert(
+        mockIFO.depositPoolPrivate(parseEther("0"), "1", merkleProofMap.get(bob), { from: bob }),
+        "Deposit: Amount must be > 0"
+      );
+    });
+
+    it("User cannot deposit in pool1 without valid proof", async () => {
+      await expectRevert(
+        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", "0x00", { from: bob }),
+        "Deposit: Invalid proof1"
+      );
+      await expectRevert(
+        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", merkleProofMap.get(carol), { from: bob }),
+        "Deposit: Invalid proof2"
+      );
+      await expectRevert(
+        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", emptyHash, { from: bob }),
+        "Deposit: Invalid proof3"
+      );
     });
 
     it("User cannot deposit in pools that don't exist", async () => {
@@ -367,7 +425,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("User (Bob) can deposit in pool1", async () => {
-      result = await mockIFO.depositPool(parseEther("4"), "1", { from: bob });
+      result = await mockIFO.depositPoolPrivate(parseEther("4"), "1", merkleProofMap.get(bob), { from: bob });
       expectEvent(result, "Deposit", {
         user: bob,
         amount: String(parseEther("4")),
@@ -390,7 +448,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("User (Carol) deposits in pool1", async () => {
-      result = await mockIFO.depositPool(parseEther("5"), "1", { from: carol });
+      result = await mockIFO.depositPoolPrivate(parseEther("5"), "1", merkleProofMap.get(carol), { from: carol });
 
       expectEvent(result, "Deposit", {
         user: carol,
@@ -416,7 +474,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("User (David) deposits in pool1", async () => {
-      await mockIFO.depositPool(parseEther("3"), "1", { from: david });
+      await mockIFO.depositPoolPrivate(parseEther("3"), "1", merkleProofMap.get(david), { from: david });
 
       // 10 LP
       // 4/12 * 1M = 333,333
@@ -445,7 +503,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (account 0) deposits 88 LP in pool1", async () => {
       const amountDeposit = parseEther("88");
-      await mockIFO.depositPool(amountDeposit, "1", { from: accounts[0] });
+      await mockIFO.depositPoolPrivate(amountDeposit, "1", merkleProofMap.get(accounts[0]), { from: accounts[0] });
 
       // Tax overflow is 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -461,7 +519,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (account 1) deposits 300 LP in pool1", async () => {
       const amountDeposit = parseEther("300");
-      await mockIFO.depositPool(amountDeposit, "1", { from: accounts[1] });
+      await mockIFO.depositPoolPrivate(amountDeposit, "1", merkleProofMap.get(accounts[1]), { from: accounts[1] });
 
       // Tax overflow is 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -477,7 +535,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (account 2) deposits 600 LP in pool1", async () => {
       const amountDeposit = parseEther("600");
-      await mockIFO.depositPool(amountDeposit, "1", { from: accounts[2] });
+      await mockIFO.depositPoolPrivate(amountDeposit, "1", merkleProofMap.get(accounts[2]), { from: accounts[2] });
 
       // Tax overflow is 1.00%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -502,7 +560,10 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Cannot deposit to any of the pools", async () => {
       await expectRevert(mockIFO.depositPool(parseEther("1"), "0", { from: bob }), "Deposit: Too late");
-      await expectRevert(mockIFO.depositPool(parseEther("1"), "1", { from: bob }), "Deposit: Too late");
+      await expectRevert(
+        mockIFO.depositPoolPrivate(parseEther("1"), "1", merkleProofMap.get(bob), { from: bob }),
+        "Deposit: Too late"
+      );
     });
 
     it("Cannot harvest if didn't participate", async () => {
@@ -953,7 +1014,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         IFOV2.new(mockLP.address, mockLP.address, _startTimestamp, _endTimestamp, alice, {
           from: alice,
         }),
-        "Operations: Tokens must be be different"
+        "Operations: Tokens must be different"
       );
       await expectRevert(
         IFOV2.new(alice, mockOC.address, _startTimestamp, _endTimestamp, alice, {
@@ -1402,9 +1463,15 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     it("Initialize", async () => {
       const numberDecimals = 6;
 
-      mockOC = await MockERC20.new("Mock Pool Token Test", "PT", parseUnits("20000", numberDecimals), numberDecimals, {
-        from: alice,
-      });
+      mockOC = await MockERC20Decimals.new(
+        "Mock Pool Token Test",
+        "PT",
+        parseUnits("20000", numberDecimals),
+        numberDecimals,
+        {
+          from: alice,
+        }
+      );
 
       // IFO timestamps
       _startTimestamp = new BN(await time.latest()).add(new BN("50"));
