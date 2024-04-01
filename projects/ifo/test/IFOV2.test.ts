@@ -268,16 +268,16 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("User cannot deposit in pool1 without valid proof", async () => {
       await expectRevert(
-        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", "0x00", { from: bob }),
-        "Deposit: Invalid proof1"
+        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", ["0x00"], { from: bob }),
+        "Deposit: Invalid proof"
       );
       await expectRevert(
         mockIFO.depositPoolPrivate(parseEther("0.1"), "1", merkleProofMap.get(carol), { from: bob }),
-        "Deposit: Invalid proof2"
+        "Deposit: Invalid proof"
       );
       await expectRevert(
-        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", emptyHash, { from: bob }),
-        "Deposit: Invalid proof3"
+        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", [emptyHash], { from: bob }),
+        "Deposit: Invalid proof"
       );
     });
 
