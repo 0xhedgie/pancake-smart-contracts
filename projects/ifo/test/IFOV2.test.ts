@@ -15,9 +15,6 @@ const MockERC20Decimals = artifacts.require("./utils/MockERC20Decimals.sol");
 contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) => {
   // SectaProfile
   const _totalInitSupply = parseEther("5000000"); // 50 SECTA
-  const _numberSectaToReactivate = parseEther("5"); // 5 SECTA
-  const _numberSectaToRegister = parseEther("5"); // 5 SECTA
-  const _numberSectaToUpdate = parseEther("2"); // 2 SECTA
 
   // IFO timestamps
   let _startTimestamp;
@@ -40,11 +37,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
   // offeringAmountPool0 + offeringAmountPool1
   let offeringTotalAmount = parseEther("1050");
   let raisingAmountTotal = parseEther("105");
-
-  // Gamification parameters
-  let campaignId = "12345678";
-  let numberPoints = "100";
-  let thresholdPoints = parseEther("0.035");
 
   // VARIABLES
 
@@ -199,7 +191,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         "0",
         true, // tax
         "1",
-        true,
         merkleTree.root,
         { from: alice }
       );
@@ -210,14 +201,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         offeringAmountPool: String(offeringAmountPool1),
         raisingAmountPool: String(raisingAmountPool1),
         pid: String(1),
-      });
-
-      result = await mockIFO.updatePointParameters(campaignId, numberPoints, thresholdPoints, { from: alice });
-
-      expectEvent(result, "PointParametersSet", {
-        campaignId: String(campaignId),
-        numberPoints: String(numberPoints),
-        thresholdPoints: String(thresholdPoints),
       });
     });
 
@@ -268,7 +251,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("User cannot deposit in pool1 without valid proof", async () => {
       await expectRevert(
-        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", ["0x00"], { from: bob }),
+        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", ["0x01"], { from: bob }),
         "Deposit: Invalid proof"
       );
       await expectRevert(
@@ -920,13 +903,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       );
     });
 
-    it("It is not possible to change point parameters after start", async () => {
-      await expectRevert(
-        mockIFO.updatePointParameters(campaignId, numberPoints, thresholdPoints, { from: alice }),
-        "Operations: IFO has ended"
-      );
-    });
-
     it("Owner can recover funds if wrong token", async () => {
       // Deploy Wrong LP
       const wrongLP = await MockERC20.new("Wrong LP", "LP", "100", {
@@ -964,10 +940,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         "Ownable: caller is not the owner"
       );
       await expectRevert(
-        mockIFO.updatePointParameters("1", "1", "1", { from: carol }),
-        "Ownable: caller is not the owner"
-      );
-      await expectRevert(
         mockIFO.recoverWrongTokens(mockOC.address, "1", { from: carol }),
         "Ownable: caller is not the owner"
       );
@@ -1002,11 +974,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       // offeringAmountPool0 + offeringAmountPool1
       offeringTotalAmount = parseEther("1050");
       raisingAmountTotal = parseEther("105");
-
-      // Gamification parameters
-      campaignId = "123456789";
-      numberPoints = "200";
-      thresholdPoints = parseEther("0.2");
     });
 
     it("It is not possible to set an IFO with wrong ERC20 tokens", async () => {
@@ -1090,8 +1057,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       );
 
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
-
-      await mockIFO.updatePointParameters(campaignId, numberPoints, thresholdPoints, { from: alice });
     });
 
     it("All users are approving the tokens to be spent by the IFO #2", async () => {
@@ -1267,11 +1232,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       offeringAmountPool1 = parseEther("5");
       raisingAmountPool1 = parseEther("12");
 
-      // Gamification parameters
-      campaignId = "1234567891";
-      numberPoints = "200";
-      thresholdPoints = parseEther("0.2");
-
       // Alice deploys the IFO setting herself as the contract admin
       mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
@@ -1293,8 +1253,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       );
 
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
-
-      await mockIFO.updatePointParameters(campaignId, numberPoints, thresholdPoints, { from: alice });
 
       // Bob, Carol, David, Erin are approving the tokens to be spent by the IFO #3
       for (const thisUser of [bob, carol, david, erin]) {
@@ -1481,11 +1439,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       offeringAmountPool1 = parseUnits("5", numberDecimals);
       raisingAmountPool1 = parseEther("12");
 
-      // Gamification parameters
-      campaignId = "1234567891";
-      numberPoints = "200";
-      thresholdPoints = parseEther("0.2");
-
       // Alice deploys the IFO setting herself as the contract admin
       mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
@@ -1509,8 +1462,6 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       );
 
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
-
-      await mockIFO.updatePointParameters(campaignId, numberPoints, thresholdPoints, { from: alice });
 
       // Bob, Carol, David, Erin are approving the tokens to be spent by the IFO
       for (const thisUser of [bob, carol, david, erin]) {

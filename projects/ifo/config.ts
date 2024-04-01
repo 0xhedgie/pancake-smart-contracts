@@ -14,15 +14,16 @@ export default {
     testnet: "0x528Af89003631CF5Fc4Cdaa1E32Ce7ba4a8140BE", // SECTA
   },
   SectaProfile: {
+    // not being used
     mainnet: "0xdf4dbf6536201370f95e06a0f8a7a70fe40e388a",
     testnet: "0x4B683C7E13B6d5D7fd1FeA9530F451954c1A7c8A",
   },
-  StartBlock: {
+  StartTimestamp: {
     mainnet: "0", // TO BE REPLACED
-    testnet: "1711560000",
+    testnet: "1711981000",
   },
-  EndBlock: {
+  EndTimestamp: {
     mainnet: "0", // TO BE REPLACED
-    testnet: "1711668000",
+    testnet: "1711991800",
   },
 };

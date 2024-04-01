@@ -168,31 +168,6 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "campaignId",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "numberPoints",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "thresholdPoints",
-        "type": "uint256"
-      }
-    ],
-    "name": "PointParametersSet",
-    "type": "event"
-  },
-  {
-    "anonymous": false,
-    "inputs": [
-      {
-        "indexed": false,
-        "internalType": "uint256",
         "name": "offeringAmountPool",
         "type": "uint256"
       },
@@ -211,19 +186,6 @@
     ],
     "name": "PoolParametersSet",
     "type": "event"
-  },
-  {
-    "inputs": [],
-    "name": "campaignId",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
   },
   {
     "inputs": [
@@ -362,19 +324,6 @@
   },
   {
     "inputs": [],
-    "name": "numberPoints",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "numberPools",
     "outputs": [
       {
@@ -498,11 +447,6 @@
         "type": "uint8"
       },
       {
-        "internalType": "bool",
-        "name": "_isPrivate",
-        "type": "bool"
-      },
-      {
         "internalType": "bytes32",
         "name": "_root",
         "type": "bytes32"
@@ -527,19 +471,6 @@
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "thresholdPoints",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
     "inputs": [
       {
         "internalType": "address",
@@ -548,29 +479,6 @@
       }
     ],
     "name": "transferOwnership",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_campaignId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_numberPoints",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_thresholdPoints",
-        "type": "uint256"
-      }
-    ],
-    "name": "updatePointParameters",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

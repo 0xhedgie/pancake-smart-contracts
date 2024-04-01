@@ -69,21 +69,7 @@ interface IIFO {
         uint256 _limitPerUserInLP,
         bool _hasTax,
         uint8 _pid,
-        bool _hasWhitelisting,
         bytes32 _root
-    ) external;
-
-    /**
-     * @notice It updates point parameters for the IFO.
-     * @param _numberPoints: the number of points for the IFO
-     * @param _campaignId: the campaignId for the IFO
-     * @param _thresholdPoints: the amount of LP required to receive points
-     * @dev This function is only callable by admin.
-     */
-    function updatePointParameters(
-        uint256 _campaignId,
-        uint256 _numberPoints,
-        uint256 _thresholdPoints
     ) external;
 
     /**

@@ -18,8 +18,8 @@ const main = async () => {
     const ifoV2 = await IFOV2.deploy(
       config.LPToken[name],
       config.OfferingToken[name],
-      config.StartBlock[name],
-      config.EndBlock[name],
+      config.StartTimestamp[name],
+      config.EndTimestamp[name],
       config.AdminAddress[name]
     );
 
@@ -31,8 +31,8 @@ const main = async () => {
     const ifoV2 = await IFOV2.deploy(
       config.LPToken[name],
       config.OfferingToken[name],
-      config.StartBlock[name],
-      config.EndBlock[name],
+      config.StartTimestamp[name],
+      config.EndTimestamp[name],
       config.AdminAddress[name]
     );
 
@@ -42,8 +42,8 @@ const main = async () => {
     await verifyContract(ifoV2.address, [
       config.LPToken[name],
       config.OfferingToken[name],
-      config.StartBlock[name],
-      config.EndBlock[name],
+      config.StartTimestamp[name],
+      config.EndTimestamp[name],
       config.AdminAddress[name],
     ]);
     await sleep(10000);
@@ -68,8 +68,6 @@ const main = async () => {
       0, // limit
       false, // tax
       0, // id
-      false,
-      ethers.constants.HashZero,
       { gasLimit: 1000000 }
     );
 
@@ -83,13 +81,12 @@ const main = async () => {
     await offeringToken.transfer(ifoV2.address, offeringAmountPool1);
 
     // Pool 1 is set
-    await ifoV2.setPool(
+    await ifoV2.setPoolPrivate(
       offeringAmountPool1,
       raisingAmountPool1,
       0, // limit
       false, // tax
       1, // id
-      true,
       "0x4551caae2a6eac153a77a43e19c04344a830bde8dfd0f139a4c585fe0c6e619f",
       { gasLimit: 1000000 }
     );

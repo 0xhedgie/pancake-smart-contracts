@@ -11,7 +11,7 @@ const main = async () => {
   console.log("Compiled contracts!");
 
   const IFOV2 = await ethers.getContractFactory("IFOV2");
-  const ifoV2Address = "0x5E2f26582F3c182845F06D0BbE593E370b15607F";
+  const ifoV2Address = "0x5E2f26582F3c182845F06D0BbE593E370b15607F"; // update with corresponding deployment address
 
   const ifoV2 = IFOV2.attach(ifoV2Address);
 
@@ -31,13 +31,12 @@ const main = async () => {
   // await offeringToken.transfer(ifoV2.address, offeringAmountPool0);
 
   // Pool 0 is set
-  await ifoV2.setPool(
+  await ifoV2.setPoolPrivate(
     offeringAmountPool0,
     raisingAmountPool0,
     0, // limit
     false, // tax
     0, // id
-    true,
     "0x3c5ba46dc852d541c2aec7fe5df494453a2195227eb54d9ab63ca0b552bbe66e",
     { gasLimit: 1000000 }
   );
@@ -58,8 +57,6 @@ const main = async () => {
     0,
     false, // tax
     1,
-    false,
-    ethers.constants.HashZero,
     { gasLimit: 1000000 }
   );
 };

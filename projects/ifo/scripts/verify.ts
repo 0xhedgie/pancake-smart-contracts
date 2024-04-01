@@ -15,8 +15,8 @@ const main = async () => {
   await verifyContract(ifoV2Address, [
     config.LPToken[name],
     config.OfferingToken[name],
-    config.StartBlock[name],
-    config.EndBlock[name],
+    config.StartTimestamp[name],
+    config.EndTimestamp[name],
     config.AdminAddress[name],
   ]);
   await sleep(10000);

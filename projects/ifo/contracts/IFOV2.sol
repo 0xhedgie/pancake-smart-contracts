@@ -37,20 +37,8 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
     // The timestamp number when IFO ends
     uint256 public endTimestamp;
 
-    // The campaignId for the IFO
-    uint256 public campaignId;
-
-    // The number of points distributed to each person who harvest
-    uint256 public numberPoints;
-
-    // The threshold for points (in LP tokens)
-    uint256 public thresholdPoints;
-
     // Array of PoolCharacteristics of size numberPools
     PoolCharacteristics[numberPools] private _poolInformation;
-
-    // Checks if user has claimed points
-    mapping(address => bool) private _hasClaimedPoints;
 
     // It maps the address to pool id to UserInfo
     mapping(address => mapping(uint8 => UserInfo)) private _userInfo;
@@ -87,9 +75,6 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
 
     // Event for new start & end timestamps
     event NewStartAndEndTimestamps(uint256 startTimestamp, uint256 endTimestamp);
-
-    // Event with point parameters for IFO
-    event PointParametersSet(uint256 campaignId, uint256 numberPoints, uint256 thresholdPoints);
 
     // Event when parameters are set for one of the pools
     event PoolParametersSet(uint256 offeringAmountPool, uint256 raisingAmountPool, uint8 pid);
@@ -224,9 +209,6 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         // Checks whether the user has already harvested
         require(!_userInfo[msg.sender][_pid].claimedPool, "Harvest: Already done");
 
-        // Claim points if possible
-        _claimPoints(msg.sender);
-
         // Updates the harvest status
         _userInfo[msg.sender][_pid].claimedPool = true;
 
@@ -350,32 +332,10 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         uint256 _limitPerUserInLP,
         bool _hasTax,
         uint8 _pid,
-        bool _isPrivate,
         bytes32 _root
     ) external override onlyOwner {
-        require(_isPrivate, "Operations: Private pool");
         require(_root != bytes32(0), "Operations: Empty merkle root");
-        _setPool(_offeringAmountPool, _raisingAmountPool, _limitPerUserInLP, _hasTax, _pid, _isPrivate, _root);
-    }
-
-    /**
-     * @notice It updates point parameters for the IFO.
-     * @param _numberPoints: the number of points for the IFO
-     * @param _campaignId: the campaignId for the IFO
-     * @param _thresholdPoints: the amount of LP required to receive points
-     * @dev This function is only callable by admin.
-     */
-    function updatePointParameters(
-        uint256 _campaignId,
-        uint256 _numberPoints,
-        uint256 _thresholdPoints
-    ) external override onlyOwner {
-        require(now < endTimestamp, "Operations: IFO has ended");
-        numberPoints = _numberPoints;
-        campaignId = _campaignId;
-        thresholdPoints = _thresholdPoints;
-
-        emit PointParametersSet(campaignId, numberPoints, thresholdPoints);
+        _setPool(_offeringAmountPool, _raisingAmountPool, _limitPerUserInLP, _hasTax, _pid, true, _root);
     }
 
     /**
@@ -399,7 +359,7 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
      * @notice It allows the admin to update start and end timestamps
      * @param _startTimestamp: the new start timestamp
      * @param _endTimestamp: the new end timestamp
-     * @dev This function is only callable by admin. This is only for development.
+     * @dev This function is only callable by admin. This is only for development and will be removed in production.
      */
     function forceUpdateStartAndEndTimestamps(uint256 _startTimestamp, uint256 _endTimestamp) external onlyOwner {
         require(_startTimestamp < _endTimestamp, "Operations: New startTimestamp must be lower than new endTimestamp");
@@ -529,24 +489,6 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
             amountPools[i] = [userOfferingAmountPool, userRefundingAmountPool, userTaxAmountPool];
         }
         return amountPools;
-    }
-
-    /**
-     * @notice It allows users to claim points
-     * @param _user: user address
-     */
-    function _claimPoints(address _user) internal {
-        if (!_hasClaimedPoints[_user]) {
-            uint256 sumPools;
-            for (uint8 i = 0; i < numberPools; i++) {
-                sumPools = sumPools.add(_userInfo[msg.sender][i].amountPool);
-            }
-            if (sumPools > thresholdPoints) {
-                _hasClaimedPoints[_user] = true;
-                // Increase user points
-                // sectaProfile.increaseUserPoints(msg.sender, numberPoints, campaignId);
-            }
-        }
     }
 
     /**
