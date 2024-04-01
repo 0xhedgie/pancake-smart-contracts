@@ -10,7 +10,6 @@ module.exports = {
     "SectaFactory.sol",
     "SectaPair.sol",
     "SectaRouter.sol",
-    "SectaRouter01.sol",
     "utils/MockERC20.sol",
   ],
 };
