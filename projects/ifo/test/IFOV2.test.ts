@@ -173,7 +173,9 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         raisingAmountPool0,
         limitPerUserInLp,
         false, // tax
-        "0",
+        0,
+        0,
+        "0x0",
         { from: alice }
       );
 
@@ -185,12 +187,13 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("0")), "0");
 
-      result = await mockIFO.setPoolPrivate(
+      result = await mockIFO.setPool(
         offeringAmountPool1,
         raisingAmountPool1,
         "0",
         true, // tax
         "1",
+        1,
         merkleTree.root,
         { from: alice }
       );
@@ -223,8 +226,11 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
   });
 
   describe("IFO #1 - OVERFLOW FOR BOTH POOLS", async () => {
-    it("User cannot deposit without proof if private", async () => {
-      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "1", { from: frank }), "Deposit: Pool is private");
+    it("User must not provide proof for basic sale", async () => {
+      await expectRevert(
+        mockIFO.depositPool(parseEther("0.6"), "0", ["0x0"], { from: frank }),
+        "Deposit: No proof needed for basic sale"
+      );
     });
 
     it("User cannot deposit if Deposit: Too early", async () => {
@@ -232,9 +238,9 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         from: bob,
       });
 
-      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "0", { from: bob }), "Deposit: Too early");
+      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "0", [], { from: bob }), "Deposit: Too early");
       await expectRevert(
-        mockIFO.depositPoolPrivate(parseEther("0.6"), "1", merkleProofMap.get(bob), { from: bob }),
+        mockIFO.depositPool(parseEther("0.6"), "1", merkleProofMap.get(bob), { from: bob }),
         "Deposit: Too early"
       );
 
@@ -242,41 +248,41 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("User cannot deposit in pools if amount is 0", async () => {
-      await expectRevert(mockIFO.depositPool(parseEther("0"), "0", { from: bob }), "Deposit: Amount must be > 0");
+      await expectRevert(mockIFO.depositPool(parseEther("0"), "0", [], { from: bob }), "Deposit: Amount must be > 0");
       await expectRevert(
-        mockIFO.depositPoolPrivate(parseEther("0"), "1", merkleProofMap.get(bob), { from: bob }),
+        mockIFO.depositPool(parseEther("0"), "1", merkleProofMap.get(bob), { from: bob }),
         "Deposit: Amount must be > 0"
       );
     });
 
     it("User cannot deposit in pool1 without valid proof", async () => {
       await expectRevert(
-        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", ["0x01"], { from: bob }),
+        mockIFO.depositPool(parseEther("0.1"), "1", ["0x01"], { from: bob }),
         "Deposit: Invalid proof"
       );
       await expectRevert(
-        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", merkleProofMap.get(carol), { from: bob }),
+        mockIFO.depositPool(parseEther("0.1"), "1", merkleProofMap.get(carol), { from: bob }),
         "Deposit: Invalid proof"
       );
       await expectRevert(
-        mockIFO.depositPoolPrivate(parseEther("0.1"), "1", [emptyHash], { from: bob }),
+        mockIFO.depositPool(parseEther("0.1"), "1", [emptyHash], { from: bob }),
         "Deposit: Invalid proof"
       );
     });
 
     it("User cannot deposit in pools that don't exist", async () => {
-      await expectRevert(mockIFO.depositPool(parseEther("0"), "2", { from: bob }), "Deposit: Non valid pool id");
+      await expectRevert(mockIFO.depositPool(parseEther("0"), "2", [], { from: bob }), "Deposit: Non valid pool id");
     });
 
     it("User cannot deposit in pool0 if amount higher than the limit", async () => {
       await expectRevert(
-        mockIFO.depositPool(parseEther("0.6"), "0", { from: bob }),
+        mockIFO.depositPool(parseEther("0.6"), "0", [], { from: bob }),
         "Deposit: New amount above user limit"
       );
     });
 
     it("User (Bob) can deposit in pool0", async () => {
-      result = await mockIFO.depositPool(parseEther("0.3"), "0", { from: bob });
+      result = await mockIFO.depositPool(parseEther("0.3"), "0", [], { from: bob });
       expectEvent(result, "Deposit", {
         user: bob,
         amount: String(parseEther("0.3")),
@@ -307,13 +313,13 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("User cannot deposit more in pool0 if new amount + amount > limit", async () => {
       await expectRevert(
-        mockIFO.depositPool(parseEther("0.200001"), "0", { from: bob }),
+        mockIFO.depositPool(parseEther("0.200001"), "0", [], { from: bob }),
         "Deposit: New amount above user limit"
       );
     });
 
     it("User (Bob) deposits 0.1 LP ", async () => {
-      result = await mockIFO.depositPool(parseEther("0.1"), "0", { from: bob });
+      result = await mockIFO.depositPool(parseEther("0.1"), "0", [], { from: bob });
       expectEvent(result, "Deposit", {
         user: bob,
         amount: String(parseEther("0.1")),
@@ -330,7 +336,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("User (Carol) deposits in pool0", async () => {
-      await mockIFO.depositPool(parseEther("0.5"), "0", { from: carol });
+      await mockIFO.depositPool(parseEther("0.5"), "0", [], { from: carol });
 
       result = await mockIFO.viewUserAllocationPools(bob, [0]);
       assert.equal(result[0].toString(), "444444444444");
@@ -358,7 +364,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("User (David) deposits in pool0", async () => {
-      await mockIFO.depositPool(parseEther("0.1"), "0", { from: david });
+      await mockIFO.depositPool(parseEther("0.1"), "0", [], { from: david });
 
       // 0.4/1 * 1M = 400,000
       let expectedResult = parseEther("0.4").mul(1e12).div(parseEther("1"));
@@ -396,7 +402,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("14 accounts deposit in pool0", async () => {
       for (const thisUser of accounts) {
-        await mockIFO.depositPool(parseEther("0.5"), "0", { from: thisUser });
+        await mockIFO.depositPool(parseEther("0.5"), "0", [], { from: thisUser });
       }
 
       // No tax on overflow for pool 1
@@ -408,7 +414,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("User (Bob) can deposit in pool1", async () => {
-      result = await mockIFO.depositPoolPrivate(parseEther("4"), "1", merkleProofMap.get(bob), { from: bob });
+      result = await mockIFO.depositPool(parseEther("4"), "1", merkleProofMap.get(bob), { from: bob });
       expectEvent(result, "Deposit", {
         user: bob,
         amount: String(parseEther("4")),
@@ -431,7 +437,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("User (Carol) deposits in pool1", async () => {
-      result = await mockIFO.depositPoolPrivate(parseEther("5"), "1", merkleProofMap.get(carol), { from: carol });
+      result = await mockIFO.depositPool(parseEther("5"), "1", merkleProofMap.get(carol), { from: carol });
 
       expectEvent(result, "Deposit", {
         user: carol,
@@ -457,7 +463,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("User (David) deposits in pool1", async () => {
-      await mockIFO.depositPoolPrivate(parseEther("3"), "1", merkleProofMap.get(david), { from: david });
+      await mockIFO.depositPool(parseEther("3"), "1", merkleProofMap.get(david), { from: david });
 
       // 10 LP
       // 4/12 * 1M = 333,333
@@ -486,7 +492,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (account 0) deposits 88 LP in pool1", async () => {
       const amountDeposit = parseEther("88");
-      await mockIFO.depositPoolPrivate(amountDeposit, "1", merkleProofMap.get(accounts[0]), { from: accounts[0] });
+      await mockIFO.depositPool(amountDeposit, "1", merkleProofMap.get(accounts[0]), { from: accounts[0] });
 
       // Tax overflow is 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -502,7 +508,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (account 1) deposits 300 LP in pool1", async () => {
       const amountDeposit = parseEther("300");
-      await mockIFO.depositPoolPrivate(amountDeposit, "1", merkleProofMap.get(accounts[1]), { from: accounts[1] });
+      await mockIFO.depositPool(amountDeposit, "1", merkleProofMap.get(accounts[1]), { from: accounts[1] });
 
       // Tax overflow is 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -518,7 +524,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (account 2) deposits 600 LP in pool1", async () => {
       const amountDeposit = parseEther("600");
-      await mockIFO.depositPoolPrivate(amountDeposit, "1", merkleProofMap.get(accounts[2]), { from: accounts[2] });
+      await mockIFO.depositPool(amountDeposit, "1", merkleProofMap.get(accounts[2]), { from: accounts[2] });
 
       // Tax overflow is 1.00%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -542,9 +548,9 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("Cannot deposit to any of the pools", async () => {
-      await expectRevert(mockIFO.depositPool(parseEther("1"), "0", { from: bob }), "Deposit: Too late");
+      await expectRevert(mockIFO.depositPool(parseEther("1"), "0", [], { from: bob }), "Deposit: Too late");
       await expectRevert(
-        mockIFO.depositPoolPrivate(parseEther("1"), "1", merkleProofMap.get(bob), { from: bob }),
+        mockIFO.depositPool(parseEther("1"), "1", merkleProofMap.get(bob), { from: bob }),
         "Deposit: Too late"
       );
     });
@@ -885,6 +891,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
           "0",
           false, // tax
           "0",
+          0,
+          "0x0",
           { from: alice }
         ),
         "Operations: IFO has started"
@@ -897,6 +905,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
           "0",
           false, // tax
           "0",
+          0,
+          "0x0",
           { from: alice }
         ),
         "Operations: IFO has started"
@@ -935,6 +945,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
           limitPerUserInLp,
           false, // tax
           "0",
+          0,
+          "0x0",
           { from: carol }
         ),
         "Ownable: caller is not the owner"
@@ -1018,6 +1030,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
           limitPerUserInLp,
           false, // tax
           "2",
+          0,
+          "0x0",
           { from: alice }
         ),
         "Operations: Pool does not exist"
@@ -1025,8 +1039,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("It is not possible to deposit if a pool isn't set", async () => {
-      await expectRevert(mockIFO.depositPool(parseEther("0.5"), "0", { from: bob }), "Deposit: Pool not set");
-      await expectRevert(mockIFO.depositPool(parseEther("10"), "1", { from: bob }), "Deposit: Pool not set");
+      await expectRevert(mockIFO.depositPool(parseEther("0.5"), "0", [], { from: bob }), "Deposit: Pool not set");
+      await expectRevert(mockIFO.depositPool(parseEther("10"), "1", [], { from: bob }), "Deposit: Pool not set");
     });
 
     it("Pools are set", async () => {
@@ -1042,6 +1056,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         limitPerUserInLp,
         false, // tax
         "0",
+        0,
+        "0x0",
         { from: alice }
       );
 
@@ -1053,6 +1069,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         "0",
         true, // tax
         "1",
+        0,
+        "0x0",
         { from: alice }
       );
 
@@ -1072,10 +1090,10 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       // Advance to _startTimestamp
       await time.increaseTo(_startTimestamp);
 
-      await mockIFO.depositPool(parseEther("0.4"), "0", { from: bob });
-      await mockIFO.depositPool(parseEther("0.5"), "0", { from: carol });
-      await mockIFO.depositPool(parseEther("0.35222222"), "0", { from: david });
-      await mockIFO.depositPool(parseEther("0.000000022546772549"), "0", { from: erin });
+      await mockIFO.depositPool(parseEther("0.4"), "0", [], { from: bob });
+      await mockIFO.depositPool(parseEther("0.5"), "0", [], { from: carol });
+      await mockIFO.depositPool(parseEther("0.35222222"), "0", [], { from: david });
+      await mockIFO.depositPool(parseEther("0.000000022546772549"), "0", [], { from: erin });
 
       // TOTAL AMOUNT POOL 0: 1.25222224254677 LP
       // RAISING AMOUNT POOL 0: 5 LP
@@ -1083,10 +1101,10 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
 
     it("Users deposit some LP in pool1", async () => {
-      await mockIFO.depositPool(parseEther("4"), "1", { from: bob });
-      await mockIFO.depositPool(parseEther("53"), "1", { from: carol });
-      await mockIFO.depositPool(parseEther("1.233324564654633322"), "1", { from: david });
-      await mockIFO.depositPool(parseEther("0.000000022546772549"), "1", { from: erin });
+      await mockIFO.depositPool(parseEther("4"), "1", [], { from: bob });
+      await mockIFO.depositPool(parseEther("53"), "1", [], { from: carol });
+      await mockIFO.depositPool(parseEther("1.233324564654633322"), "1", [], { from: david });
+      await mockIFO.depositPool(parseEther("0.000000022546772549"), "1", [], { from: erin });
       // TOTAL AMOUNT POOL 1: 58.2333245872014 LP
       // RAISING AMOUNT POOL1: 100 LP
       // UNDERFLOW RATIO: 0.582333245872014
@@ -1249,6 +1267,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         "0",
         true, // tax
         "1",
+        0,
+        "0x0",
         { from: alice }
       );
 
@@ -1266,7 +1286,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       await time.increaseTo(_startTimestamp);
 
       const amountDeposit = parseEther("12");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow remains 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -1282,7 +1302,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 108 LP in pool1", async () => {
       const amountDeposit = parseEther("108");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow remains at 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -1292,7 +1312,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 480 LP in pool1", async () => {
       const amountDeposit = parseEther("480");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow moves to 0.50%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "5000000000");
@@ -1302,7 +1322,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 600 LP in pool1", async () => {
       const amountDeposit = parseEther("600");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow moves to 0.30%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "3000000000");
@@ -1312,7 +1332,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 1800 LP in pool1", async () => {
       const amountDeposit = parseEther("1800");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow moves to 0.25%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "2500000000");
@@ -1324,7 +1344,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 3000 LP in pool1", async () => {
       const amountDeposit = parseEther("3000");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow moves to 0.20%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "2000000000");
@@ -1336,7 +1356,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("User (Carol) deposits 1/10e18 of LP in pool1", async () => {
       const amountDeposit = 1;
-      await mockIFO.depositPool(amountDeposit, "1", { from: carol });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: carol });
 
       result = await mockIFO.viewUserOfferingAndRefundingAmountsForPools(carol, ["1"]);
       assert.equal(result[0][0].toString(), "0"); // Offering amount collected
@@ -1458,6 +1478,8 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         "0",
         true, // tax
         "1",
+        0,
+        "0x0",
         { from: alice }
       );
 
@@ -1475,7 +1497,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       await time.increaseTo(_startTimestamp);
 
       const amountDeposit = parseEther("12");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow remains 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -1491,7 +1513,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 108 LP in pool1", async () => {
       const amountDeposit = parseEther("108");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow remains at 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -1501,7 +1523,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 480 LP in pool1", async () => {
       const amountDeposit = parseEther("480");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow moves to 0.50%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "5000000000");
@@ -1511,7 +1533,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 600 LP in pool1", async () => {
       const amountDeposit = parseEther("600");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow moves to 0.30%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "3000000000");
@@ -1521,7 +1543,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 1800 LP in pool1", async () => {
       const amountDeposit = parseEther("1800");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow moves to 0.25%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "2500000000");
@@ -1533,7 +1555,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("Whale (Bob) deposits 3000 LP in pool1", async () => {
       const amountDeposit = parseEther("3000");
-      await mockIFO.depositPool(amountDeposit, "1", { from: bob });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: bob });
 
       // Tax overflow moves to 0.20%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "2000000000");
@@ -1545,7 +1567,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("User (Carol) deposits 1/10e18 of LP in pool1", async () => {
       const amountDeposit = 1;
-      await mockIFO.depositPool(amountDeposit, "1", { from: carol });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: carol });
 
       result = await mockIFO.viewUserOfferingAndRefundingAmountsForPools(carol, ["1"]);
       assert.equal(result[0][0].toString(), "0"); // Offering amount collected
