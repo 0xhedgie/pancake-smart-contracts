@@ -356,21 +356,6 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @notice It allows the admin to update start and end timestamps
-     * @param _startTimestamp: the new start timestamp
-     * @param _endTimestamp: the new end timestamp
-     * @dev This function is only callable by admin. This is only for development and will be removed in production.
-     */
-    function forceUpdateStartAndEndTimestamps(uint256 _startTimestamp, uint256 _endTimestamp) external onlyOwner {
-        require(_startTimestamp < _endTimestamp, "Operations: New startTimestamp must be lower than new endTimestamp");
-
-        startTimestamp = _startTimestamp;
-        endTimestamp = _endTimestamp;
-
-        emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
-    }
-
-    /**
      * @notice It returns the pool information
      * @param _pid: poolId
      * @return raisingAmountPool: amount of LP tokens raised (in LP tokens)
