@@ -1,7 +1,7 @@
 export default {
   AdminAddress: {
-    mainnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // li
-    testnet: "0x98903fF7ee67b1615C00eBC80c39626dA508150D", // jac
+    mainnet: "0x98903fF7ee67b1615C00eBC80c39626dA508150D", // jac
+    testnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // li
   },
   LPToken: {
     mainnet: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f", // TO BE REPLACED
@@ -11,7 +11,7 @@ export default {
   },
   OfferingToken: {
     mainnet: "0x0000000000000000000000000000000000000000", // TO BE REPLACED
-    testnet: "0x528Af89003631CF5Fc4Cdaa1E32Ce7ba4a8140BE", // SECTA
+    testnet: "0xbe58d17D397d40fAC21Cb037a62dF2fb11A87715", // SECTA
   },
   SectaProfile: {
     // not being used
@@ -20,10 +20,10 @@ export default {
   },
   StartTimestamp: {
     mainnet: "0", // TO BE REPLACED
-    testnet: "1711981000",
+    testnet: "1712033221",
   },
   EndTimestamp: {
     mainnet: "0", // TO BE REPLACED
-    testnet: "1711991800",
+    testnet: "1712044021",
   },
 };

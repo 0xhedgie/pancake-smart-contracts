@@ -370,6 +370,15 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
     }
 
+    function forceUpdateTokens(address _lpToken, address _offeringToken) external onlyOwner {
+        require(IERC20(_lpToken).totalSupply() >= 0);
+        require(IERC20(_offeringToken).totalSupply() >= 0);
+        require(_lpToken != _offeringToken, "Operations: Tokens must be different");
+
+        lpToken = IERC20(_lpToken);
+        offeringToken = IERC20(_offeringToken);
+    }
+
     /**
      * @notice It returns the pool information
      * @param _pid: poolId
