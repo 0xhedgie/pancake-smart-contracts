@@ -15,7 +15,7 @@ const main = async () => {
 
   const ifoV2 = IFOV2.attach(ifoV2Address);
 
-  // await ifoV2.forceUpdateStartAndEndBlocks(config.StartBlock[name], config.EndBlock[name]);
+  await ifoV2.forceUpdateStartAndEndTimestamps(config.StartTimestamp[name], config.EndTimestamp[name]);
 
   const MockERC20 = await ethers.getContractFactory("MockERC20");
   const offeringToken = MockERC20.attach(config.OfferingToken[name]);
@@ -28,7 +28,7 @@ const main = async () => {
 
   // Transfer the offering total amount to the IFO contract
 
-  await offeringToken.transfer(ifoV2.address, offeringAmountPool0);
+  // await offeringToken.transfer(ifoV2.address, offeringAmountPool0);
 
   // Pool 0 is set
   await ifoV2.setPool(
@@ -49,7 +49,7 @@ const main = async () => {
   const raisingAmountPool1 = ethers.utils.parseUnits("800000", 6);
 
   // Transfer the offering total amount to the IFO contract
-  await offeringToken.transfer(ifoV2.address, offeringAmountPool1);
+  // await offeringToken.transfer(ifoV2.address, offeringAmountPool1);
 
   // Pool 1 is set
   await ifoV2.setPool(
