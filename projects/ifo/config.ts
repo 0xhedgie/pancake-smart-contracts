@@ -1,7 +1,7 @@
 export default {
   AdminAddress: {
-    mainnet: "0x98903fF7ee67b1615C00eBC80c39626dA508150D", // jac
-    testnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // li
+    mainnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // li
+    testnet: "0x98903fF7ee67b1615C00eBC80c39626dA508150D", // jac
   },
   LPToken: {
     mainnet: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f", // TO BE REPLACED
@@ -20,10 +20,10 @@ export default {
   },
   StartTimestamp: {
     mainnet: "0", // TO BE REPLACED
-    testnet: "1712033221",
+    testnet: "1712104000",
   },
   EndTimestamp: {
     mainnet: "0", // TO BE REPLACED
-    testnet: "1712044021",
+    testnet: "1712114800",
   },
 };
