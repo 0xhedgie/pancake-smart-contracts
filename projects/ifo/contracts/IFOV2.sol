@@ -25,8 +25,9 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
     // The offering token
     IERC20 public offeringToken;
 
-    // SectaProfile
-    // SectaProfile public sectaProfile;
+    // Types of sales
+    uint8 public constant SALE_BASIC = 0;
+    uint8 public constant SALE_PRIVATE = 1;
 
     // Number of pools
     uint8 public constant numberPools = 2;
@@ -48,11 +49,11 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         uint256 raisingAmountPool; // amount of tokens raised for the pool (in LP tokens)
         uint256 offeringAmountPool; // amount of tokens offered for the pool (in offeringTokens)
         uint256 limitPerUserInLP; // limit of tokens per user (if 0, it is ignored)
-        bool hasTax; // tax on the overflow (if any, it works with _calculateTaxOverflow)
         uint256 totalAmountPool; // total amount pool deposited (in LP tokens)
         uint256 sumTaxesOverflow; // total taxes collected (starts at 0, increases with each harvest if overflow)
-        bool isPrivate; // if the pool is private
         bytes32 merkleRoot; // merkle merkleRoot
+        bool hasTax; // tax on the overflow (if any, it works with _calculateTaxOverflow)
+        uint8 saleType; // if the pool is basic or private
     }
 
     // Struct that contains each user information for both pools
@@ -113,8 +114,8 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         transferOwnership(_adminAddress);
     }
 
-    function isPrivate(uint8 _pid) external view returns (bool) {
-        return _poolInformation[_pid].isPrivate;
+    function getSaleType(uint8 _pid) external view returns (uint8) {
+        return _poolInformation[_pid].saleType;
     }
 
     /**
@@ -122,11 +123,23 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
      * @param _amount: the number of LP token used (18 decimals)
      * @param _pid: pool id
      */
-    function depositPool(uint256 _amount, uint8 _pid) external override nonReentrant notContract {
+    function depositPool(
+        uint256 _amount,
+        uint8 _pid,
+        bytes32[] memory proof
+    ) external override nonReentrant notContract {
         // Checks whether the pool id is valid
         require(_pid < numberPools, "Deposit: Non valid pool id");
 
-        require(!_poolInformation[_pid].isPrivate, "Deposit: Pool is private");
+        // Checks if the user is in the merkle tree
+        if (_poolInformation[_pid].saleType == SALE_PRIVATE) {
+            require(_poolInformation[_pid].merkleRoot != bytes32(0), "Deposit: Merkle merkleRoot not set");
+            bytes32 leaf = keccak256(abi.encodePacked(keccak256(abi.encode(msg.sender))));
+            bytes32 merkleRoot = _poolInformation[_pid].merkleRoot;
+            require(MerkleProof.verify(proof, merkleRoot, leaf), "Deposit: Invalid proof");
+        } else {
+            require(proof.length == 0, "Deposit: No proof needed for basic sale");
+        }
 
         _depositPool(_amount, _pid);
     }
@@ -166,30 +179,6 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         _poolInformation[_pid].totalAmountPool = _poolInformation[_pid].totalAmountPool.add(_amount);
 
         emit Deposit(msg.sender, _amount, _pid);
-    }
-
-    /**
-     * @notice It allows users to deposit LP tokens to pool
-     * @param _amount: the number of LP token used (18 decimals)
-     * @param _pid: pool id
-     */
-    function depositPoolPrivate(
-        uint256 _amount,
-        uint8 _pid,
-        bytes32[] memory proof
-    ) external override nonReentrant notContract {
-        // Checks whether the pool id is valid
-        require(_pid < numberPools, "Deposit: Non valid pool id");
-
-        // Checks if the user is in the merkle tree
-        if (_poolInformation[_pid].isPrivate) {
-            require(_poolInformation[_pid].merkleRoot != bytes32(0), "Deposit: Merkle merkleRoot not set");
-            bytes32 leaf = keccak256(abi.encodePacked(keccak256(abi.encode(msg.sender))));
-            bytes32 merkleRoot = _poolInformation[_pid].merkleRoot;
-            require(MerkleProof.verify(proof, merkleRoot, leaf), "Deposit: Invalid proof");
-        }
-
-        _depositPool(_amount, _pid);
     }
 
     /**
@@ -289,9 +278,19 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         uint256 _raisingAmountPool,
         uint256 _limitPerUserInLP,
         bool _hasTax,
-        uint8 _pid
+        uint8 _pid,
+        uint8 _saleType,
+        bytes32 _root
     ) external override onlyOwner {
-        _setPool(_offeringAmountPool, _raisingAmountPool, _limitPerUserInLP, _hasTax, _pid, false, bytes32(0));
+        if (_saleType == SALE_BASIC) {
+            require(_root == bytes32(0), "Operations: Basic sale should have empty merkle root");
+        } else if (_saleType == SALE_PRIVATE) {
+            require(_root != bytes32(0), "Operations: Empty merkle root");
+        } else {
+            revert("Operations: Only basic or private sale allowed");
+        }
+
+        _setPool(_offeringAmountPool, _raisingAmountPool, _limitPerUserInLP, _hasTax, _pid, _saleType, _root);
     }
 
     function _setPool(
@@ -300,7 +299,7 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         uint256 _limitPerUserInLP,
         bool _hasTax,
         uint8 _pid,
-        bool _isPrivate,
+        uint8 _saleType,
         bytes32 _root
     ) internal {
         require(now < startTimestamp, "Operations: IFO has started");
@@ -311,31 +310,10 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         _poolInformation[_pid].limitPerUserInLP = _limitPerUserInLP;
         _poolInformation[_pid].hasTax = _hasTax;
 
-        _poolInformation[_pid].isPrivate = _isPrivate;
+        _poolInformation[_pid].saleType = _saleType;
         _poolInformation[_pid].merkleRoot = _root;
 
         emit PoolParametersSet(_offeringAmountPool, _raisingAmountPool, _pid);
-    }
-
-    /**
-     * @notice It sets parameters for pool
-     * @param _offeringAmountPool: offering amount (in tokens)
-     * @param _raisingAmountPool: raising amount (in LP tokens)
-     * @param _limitPerUserInLP: limit per user (in LP tokens)
-     * @param _hasTax: if the pool has a tax
-     * @param _pid: pool id
-     * @dev This function is only callable by admin.
-     */
-    function setPoolPrivate(
-        uint256 _offeringAmountPool,
-        uint256 _raisingAmountPool,
-        uint256 _limitPerUserInLP,
-        bool _hasTax,
-        uint8 _pid,
-        bytes32 _root
-    ) external override onlyOwner {
-        require(_root != bytes32(0), "Operations: Empty merkle root");
-        _setPool(_offeringAmountPool, _raisingAmountPool, _limitPerUserInLP, _hasTax, _pid, true, _root);
     }
 
     /**
@@ -353,6 +331,30 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
         endTimestamp = _endTimestamp;
 
         emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
+    }
+
+    /**
+     * @notice It allows the admin to update start and end timestamps
+     * @param _startTimestamp: the new start timestamp
+     * @param _endTimestamp: the new end timestamp
+     * @dev This function is only callable by admin. This is only for development and will be removed in production.
+     */
+    function forceUpdateStartAndEndTimestamps(uint256 _startTimestamp, uint256 _endTimestamp) external onlyOwner {
+        require(_startTimestamp < _endTimestamp, "Operations: New startTimestamp must be lower than new endTimestamp");
+
+        startTimestamp = _startTimestamp;
+        endTimestamp = _endTimestamp;
+
+        emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
+    }
+
+    function forceUpdateTokens(address _lpToken, address _offeringToken) external onlyOwner {
+        require(IERC20(_lpToken).totalSupply() >= 0);
+        require(IERC20(_offeringToken).totalSupply() >= 0);
+        require(_lpToken != _offeringToken, "Operations: Tokens must be different");
+
+        lpToken = IERC20(_lpToken);
+        offeringToken = IERC20(_offeringToken);
     }
 
     /**
