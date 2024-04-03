@@ -270,42 +270,6 @@
   {
     "inputs": [
       {
-        "internalType": "uint256",
-        "name": "_startTimestamp",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_endTimestamp",
-        "type": "uint256"
-      }
-    ],
-    "name": "forceUpdateStartAndEndTimestamps",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_lpToken",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "_offeringToken",
-        "type": "address"
-      }
-    ],
-    "name": "forceUpdateTokens",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
         "internalType": "uint8",
         "name": "_pid",
         "type": "uint8"

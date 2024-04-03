@@ -11,11 +11,11 @@ const main = async () => {
   console.log("Compiled contracts!");
 
   const IFOV2 = await ethers.getContractFactory("IFOV2");
-  const ifoV2Address = "0x5E2f26582F3c182845F06D0BbE593E370b15607F"; // update with corresponding deployment address
+  const ifoV2Address = "0xf1c36092a19cfABaAc70B58DD6807C85d1F6C85A"; // update with corresponding deployment address
 
   const ifoV2 = IFOV2.attach(ifoV2Address);
 
-  // await ifoV2.forceUpdateStartAndEndBlocks(config.StartBlock[name], config.EndBlock[name]);
+  await ifoV2.forceUpdateStartAndEndTimestamps(config.StartTimestamp[name], config.EndTimestamp[name]);
 
   const MockERC20 = await ethers.getContractFactory("MockERC20");
   const offeringToken = MockERC20.attach(config.OfferingToken[name]);
@@ -31,13 +31,14 @@ const main = async () => {
   // await offeringToken.transfer(ifoV2.address, offeringAmountPool0);
 
   // Pool 0 is set
-  await ifoV2.setPoolPrivate(
+  await ifoV2.setPool(
     offeringAmountPool0,
     raisingAmountPool0,
     0, // limit
     false, // tax
     0, // id
-    "0x3c5ba46dc852d541c2aec7fe5df494453a2195227eb54d9ab63ca0b552bbe66e",
+    0,
+    "0x0000000000000000000000000000000000000000000000000000000000000000",
     { gasLimit: 1000000 }
   );
 
@@ -57,6 +58,8 @@ const main = async () => {
     0,
     false, // tax
     1,
+    1,
+    "0x4551caae2a6eac153a77a43e19c04344a830bde8dfd0f139a4c585fe0c6e619f",
     { gasLimit: 1000000 }
   );
 };

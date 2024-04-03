@@ -68,6 +68,8 @@ const main = async () => {
       0, // limit
       false, // tax
       0, // id
+      0,
+      "0x0000000000000000000000000000000000000000000000000000000000000000",
       { gasLimit: 1000000 }
     );
 
@@ -81,12 +83,13 @@ const main = async () => {
     await offeringToken.transfer(ifoV2.address, offeringAmountPool1);
 
     // Pool 1 is set
-    await ifoV2.setPoolPrivate(
+    await ifoV2.setPool(
       offeringAmountPool1,
       raisingAmountPool1,
       0, // limit
       false, // tax
       1, // id
+      1,
       "0x4551caae2a6eac153a77a43e19c04344a830bde8dfd0f139a4c585fe0c6e619f",
       { gasLimit: 1000000 }
     );
