@@ -23,11 +23,10 @@ contract Staking is Ownable {
         uint256 duration;
     }
 
-    uint256 public immutable MULTIPLIER; // = 2.5 ether;
+    uint256 public immutable MULTIPLIER; // default 25000
 
-    uint256 public immutable DURATION; // = 365 days;
+    uint256 public immutable DURATION; // default 365 days
 
-    uint256 public constant BASE_MULTIPLIER = 1 ether;
     uint256 public constant BASE_POINTS = 10000;
 
     uint256 public penalty;
@@ -63,6 +62,8 @@ contract Staking is Ownable {
     function stake(uint256 _amount, uint256 _duration) external returns (uint256) {
         require(_amount > 0, "amount > 0");
         require(_duration > 0, "duration > 0");
+
+        require(_duration < type(uint32).max, "duration < 2^32");
 
         Lock[] storage userLocks = locks[msg.sender];
 
@@ -102,7 +103,15 @@ contract Staking is Ownable {
         return amount;
     }
 
+    function getPointsAt(address _owner, uint256 _time) external view returns (uint256) {
+        return _getPoints(_owner, _time);
+    }
+
     function getPoints(address _owner) external view returns (uint256) {
+        return _getPoints(_owner, now);
+    }
+
+    function _getPoints(address _owner, uint256 _time) internal view returns (uint256) {
         Lock[] memory userLocks = locks[_owner];
         uint256 length = userLocks.length;
         uint256 total;
@@ -110,13 +119,13 @@ contract Staking is Ownable {
         for (uint256 i = 0; i < length; i++) {
             Lock memory lock = userLocks[i];
 
-            uint256 elapsed = now - lock.startTimestamp;
+            uint256 elapsed = _time - lock.startTimestamp;
 
             uint256 min = elapsed > lock.duration ? lock.duration : elapsed;
             min = min > DURATION ? DURATION : min;
 
             total += lock.amount;
-            total += (lock.amount * (MULTIPLIER - BASE_MULTIPLIER) * min) / DURATION / BASE_MULTIPLIER;
+            total += (lock.amount * (MULTIPLIER - BASE_POINTS) * min) / DURATION / BASE_POINTS;
         }
 
         return total;

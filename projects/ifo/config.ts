@@ -26,4 +26,16 @@ export default {
     mainnet: "0", // TO BE REPLACED
     testnet: "1712114800",
   },
+  Multiplier: {
+    mainnet: "25000",
+    testnet: "25000",
+  },
+  Duration: {
+    mainnet: 31536000,
+    testnet: 31536000,
+  },
+  Penalty: {
+    mainnet: 500,
+    testnet: 500,
+  },
 };

@@ -13,11 +13,12 @@ const main = async () => {
 
     const Staking = await ethers.getContractFactory("Staking");
 
-    const multiplier = ethers.utils.parseEther("2.5");
-    const oneYear = 31536000;
-    const penalty = 500;
-
-    const staking = await Staking.deploy(config.OfferingToken[name], multiplier, oneYear, penalty);
+    const staking = await Staking.deploy(
+      config.OfferingToken[name],
+      config.Multiplier[name],
+      config.Duration[name],
+      config.Penalty[name]
+    );
 
     await staking.deployed();
     console.log("Staking deployed to:", staking.address);

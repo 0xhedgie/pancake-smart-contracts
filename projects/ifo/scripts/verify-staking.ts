@@ -12,11 +12,12 @@ const main = async () => {
 
   const stakingAddress = "0x08338c23cd633ca7c8e3a57372a3908498cf6853"; // update with corresponding address
 
-  const multiplier = ethers.utils.parseEther("2.5");
-  const oneYear = 31536000;
-  const penalty = 500;
-
-  await verifyContract(stakingAddress, [config.OfferingToken[name], multiplier, oneYear, penalty]);
+  await verifyContract(stakingAddress, [
+    config.OfferingToken[name],
+    config.Multiplier[name],
+    config.Duration[name],
+    config.Penalty[name],
+  ]);
   await sleep(10000);
 };
 

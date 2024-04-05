@@ -9,9 +9,9 @@ import { BN, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers"
 const Staking = artifacts.require("./Staking.sol");
 const MockERC20 = artifacts.require("./utils/MockERC20.sol");
 
-contract("Staking", async ([alice, bob, ...accounts]) => {
-  const multiplier = parseEther("2.5");
-  const baseMultiplier = parseEther("1");
+contract("Staking", async ([alice, bob, carol, ...accounts]) => {
+  const multiplier = 25000;
+  const baseMultiplier = 10000;
   const oneYear = 31536000;
   const penalty = 500;
 
@@ -28,16 +28,16 @@ contract("Staking", async ([alice, bob, ...accounts]) => {
     });
   });
 
-  describe("Staking #1 - Initial set up", async () => {
+  describe("Staking #1", async () => {
     it("The Staking #1 is deployed and initialized", async () => {
       // Alice deploys the IFO setting herself as the contract admin
       mockStaking = await Staking.new(mockLP.address, multiplier, oneYear, penalty, {
-        from: alice,
+        from: carol,
       });
     });
 
     it("approve Staking", async () => {
-      for (const thisUser of [alice, bob]) {
+      for (const thisUser of [carol, bob]) {
         await mockLP.mintTokens(parseEther("1000"), { from: thisUser });
 
         await mockLP.approve(mockStaking.address, parseEther("1000"), {
@@ -47,13 +47,39 @@ contract("Staking", async ([alice, bob, ...accounts]) => {
     });
 
     it("stake", async () => {
-      await mockStaking.stake(parseEther("1000"), oneYear, { from: alice });
+      await mockStaking.stake(parseEther("1000"), oneYear, { from: carol });
 
-      assert.equal(await mockStaking.getPoints(alice), String(parseEther("1000")));
+      assert.equal(await mockStaking.getPoints(carol), String(parseEther("1000")));
 
       await time.increase(oneYear);
 
-      assert.equal(await mockStaking.getPoints(alice), String(parseEther("1000").mul(multiplier).div(baseMultiplier)));
+      assert.equal(await mockStaking.getPoints(carol), String(parseEther("1000").mul(multiplier).div(baseMultiplier)));
+    });
+
+    it("unstake", async () => {
+      await mockStaking.unstake(0, { from: carol });
+
+      assert.equal((await mockLP.balanceOf(carol)).toString(), String(parseEther("1000")));
+
+      assert.equal(await mockStaking.getPoints(carol), 0);
+
+      await mockLP.approve(mockStaking.address, parseEther("1000"), { from: carol });
+      await mockStaking.stake(parseEther("1000"), oneYear, { from: carol });
+
+      await expectRevert(mockStaking.unstake(0, { from: bob }), "index < length");
+
+      await mockStaking.unstake(0, { from: carol });
+
+      assert.equal(
+        await mockLP.balanceOf(carol),
+        String(
+          parseEther("1000")
+            .mul(baseMultiplier - penalty)
+            .div(baseMultiplier)
+        )
+      );
+
+      assert.equal(await mockStaking.getPoints(carol), 0);
     });
   });
 });
