@@ -73,8 +73,12 @@ contract Staking is Ownable {
         return userLocks.length - 1;
     }
 
-    function getLock(uint256 _index) external view returns (Lock memory) {
-        return locks[msg.sender][_index];
+    function getLock(address _owner, uint256 _index) external view returns (Lock memory) {
+        return locks[_owner][_index];
+    }
+
+    function getLockCount(address _owner) external view returns (uint256) {
+        return locks[_owner].length;
     }
 
     function unstake(uint256 _index) external returns (uint256) {
