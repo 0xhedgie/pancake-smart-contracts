@@ -15,7 +15,7 @@ contract Staking is Ownable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    mapping(address => Lock[]) private locks;
+    mapping(address => Lock) private locks;
 
     struct Lock {
         uint256 amount;
@@ -23,7 +23,7 @@ contract Staking is Ownable {
         uint256 duration;
     }
 
-    uint256 public immutable MULTIPLIER; // default 25000
+    uint256 public immutable BOOST; // default 10000
 
     uint256 public immutable DURATION; // default 365 days
 
@@ -40,7 +40,7 @@ contract Staking is Ownable {
      */
     constructor(
         address _token,
-        uint256 _multiplier,
+        uint256 _boost,
         uint256 _duration,
         uint256 _penalty
     ) public {
@@ -49,7 +49,7 @@ contract Staking is Ownable {
 
         token = IERC20(_token);
 
-        MULTIPLIER = _multiplier;
+        BOOST = _boost;
         DURATION = _duration;
 
         penalty = _penalty;
@@ -59,46 +59,46 @@ contract Staking is Ownable {
         penalty = _penalty;
     }
 
-    function stake(uint256 _amount, uint256 _duration) external returns (uint256) {
+    function stake(uint256 _amount, uint256 _duration) external returns (Lock memory) {
         require(_amount > 0, "amount > 0");
         require(_duration > 0, "duration > 0");
 
         require(_duration < type(uint32).max, "duration < 2^32");
 
-        Lock[] storage userLocks = locks[msg.sender];
+        Lock memory newLock = locks[msg.sender];
 
-        userLocks.push(Lock(_amount, now, _duration));
+        if (newLock.startTimestamp == 0) {
+            newLock = Lock(_amount, now, _duration);
+        } else {
+            newLock.duration = newLock.duration.mul(newLock.amount).div(newLock.amount.add(_amount));
+            newLock.amount += _amount;
+        }
+
+        locks[msg.sender] = newLock;
 
         token.transferFrom(msg.sender, address(this), _amount);
 
-        return userLocks.length - 1;
+        return newLock;
     }
 
-    function getLock(address _owner, uint256 _index) external view returns (Lock memory) {
-        return locks[_owner][_index];
+    function getLock(address _owner) external view returns (Lock memory) {
+        return locks[_owner];
     }
 
-    function getLockCount(address _owner) external view returns (uint256) {
-        return locks[_owner].length;
-    }
+    function unstake() external returns (uint256) {
+        Lock memory userLock = locks[msg.sender];
 
-    function unstake(uint256 _index) external returns (uint256) {
-        Lock[] storage userLocks = locks[msg.sender];
-        uint256 length = userLocks.length;
+        uint256 amount = userLock.amount;
 
-        require(_index < length, "index < length");
+        if (amount == 0) return 0;
 
-        Lock memory lock = userLocks[_index];
-        userLocks[_index] = userLocks[length - 1];
-        userLocks.pop();
-
-        uint256 amount = lock.amount;
-
-        if (lock.startTimestamp + lock.duration > now) {
+        if (userLock.startTimestamp + userLock.duration > now) {
             amount = (amount * (BASE_POINTS - penalty)) / BASE_POINTS;
         }
 
         token.transfer(msg.sender, amount);
+
+        delete locks[msg.sender];
 
         return amount;
     }
@@ -112,21 +112,16 @@ contract Staking is Ownable {
     }
 
     function _getPoints(address _owner, uint256 _time) internal view returns (uint256) {
-        Lock[] memory userLocks = locks[_owner];
-        uint256 length = userLocks.length;
+        Lock memory userLock = locks[_owner];
         uint256 total;
 
-        for (uint256 i = 0; i < length; i++) {
-            Lock memory lock = userLocks[i];
+        uint256 elapsed = _time.sub(userLock.startTimestamp);
 
-            uint256 elapsed = _time - lock.startTimestamp;
+        uint256 min = elapsed > userLock.duration ? userLock.duration : elapsed;
+        min = min > DURATION ? DURATION : min;
 
-            uint256 min = elapsed > lock.duration ? lock.duration : elapsed;
-            min = min > DURATION ? DURATION : min;
-
-            total += lock.amount;
-            total += (lock.amount * (MULTIPLIER - BASE_POINTS) * min) / DURATION / BASE_POINTS;
-        }
+        total += userLock.amount;
+        total += userLock.amount.mul(BOOST).mul(min).div(DURATION).div(BASE_POINTS);
 
         return total;
     }
