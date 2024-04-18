@@ -15,7 +15,7 @@ const main = async () => {
 
     const staking = await Staking.deploy(
       config.OfferingToken[name],
-      config.Multiplier[name],
+      config.Boost[name],
       config.Duration[name],
       config.Penalty[name]
     );

@@ -43,29 +43,41 @@ contract("Staking", async ([alice, bob, carol, ...accounts]) => {
           from: thisUser,
         });
       }
+
+      console.log((await time.latest()) + oneYear);
     });
 
     it("stake", async () => {
-      await mockStaking.stake(parseEther("1000"), oneYear, { from: carol });
+      const startTime = Number(await time.latest());
+      await mockStaking.createLock(parseEther("1000"), startTime + oneYear, { from: carol });
 
-      assert.equal(await mockStaking.getPoints(carol), String(parseEther("1000")));
+      assert.equal(await mockStaking.balanceOf(carol), String(parseEther("1000")));
 
-      await time.increase(oneYear);
+      const userInfo = await mockStaking.getUserInfo(carol);
 
-      assert.equal(await mockStaking.getPoints(carol), String(parseEther("1000").mul(boosted).div(basePoints)));
+      assert.equal(userInfo[0].toString(), String(parseEther("1000")));
+      assert.equal(userInfo[1], startTime);
+      assert.equal(userInfo[2], oneYear);
+
+      await time.increase(oneYear + 1);
+
+      assert.equal(
+        (await mockStaking.balanceOf(carol)).toString(),
+        String(parseEther("1000").mul(boosted).div(basePoints))
+      );
     });
 
     it("unstake", async () => {
-      await mockStaking.unstake({ from: carol });
+      await mockStaking.withdrawAll({ from: carol });
 
       assert.equal((await mockLP.balanceOf(carol)).toString(), String(parseEther("1000")));
 
-      assert.equal(await mockStaking.getPoints(carol), 0);
+      assert.equal(await mockStaking.balanceOf(carol), 0);
 
       await mockLP.approve(mockStaking.address, parseEther("1000"), { from: carol });
-      await mockStaking.stake(parseEther("1000"), oneYear, { from: carol });
+      await mockStaking.createLock(parseEther("1000"), Number(await time.latest()) + oneYear, { from: carol });
 
-      await mockStaking.unstake({ from: carol });
+      await mockStaking.withdrawAll({ from: carol });
 
       assert.equal(
         await mockLP.balanceOf(carol),
@@ -76,7 +88,7 @@ contract("Staking", async ([alice, bob, carol, ...accounts]) => {
         )
       );
 
-      assert.equal(await mockStaking.getPoints(carol), 0);
+      assert.equal(await mockStaking.balanceOf(carol), 0);
     });
   });
 });

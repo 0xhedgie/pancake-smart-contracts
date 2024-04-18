@@ -33,6 +33,21 @@ contract Staking is Ownable {
 
     IERC20 public token;
 
+    /// @notice A checkpoint for marking locks from a given block
+    struct Checkpoint {
+        uint32 fromBlock;
+        uint32 fromTimestamp;
+        Lock lock;
+    }
+
+    /// @notice A record of votes checkpoints for each account, by index
+    mapping(address => mapping(uint32 => Checkpoint)) public checkpoints;
+
+    /// @notice The number of checkpoints for each account
+    mapping(address => uint32) public numCheckpoints;
+
+    event LockChanged(address user, uint256 blockNumber, uint256 timestamp);
+
     /**
      * @notice It initializes the contract (for proxy patterns)
      * @dev It can only be called once.
@@ -59,38 +74,66 @@ contract Staking is Ownable {
         penalty = _penalty;
     }
 
-    function stake(uint256 _amount, uint256 _duration) external returns (Lock memory) {
-        require(_amount > 0, "amount > 0");
-        require(_duration > 0, "duration > 0");
+    function createLock(uint256 _amount, uint256 _endTimestamp) external {
+        require(_amount > 0, "amount 0");
+        require(_endTimestamp > now, "endTimestamp too old");
 
-        require(_duration < type(uint32).max, "duration < 2^32");
+        require(_endTimestamp < type(uint32).max, "endTimestamp too big");
 
         Lock memory newLock = locks[msg.sender];
 
-        if (newLock.startTimestamp == 0) {
-            newLock = Lock(_amount, now, _duration);
-        } else {
-            newLock.duration = newLock.duration.mul(newLock.amount).div(newLock.amount.add(_amount));
-            newLock.amount += _amount;
-        }
+        require(newLock.startTimestamp == 0, "Lock exists");
+
+        newLock = Lock(_amount, now, _endTimestamp - now);
 
         locks[msg.sender] = newLock;
 
         token.transferFrom(msg.sender, address(this), _amount);
 
-        return newLock;
+        _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], newLock);
     }
 
-    function getLock(address _owner) external view returns (Lock memory) {
-        return locks[_owner];
+    function increaseLockAmount(uint256 _amount) external {
+        require(_amount > 0, "amount 0");
+
+        Lock memory newLock = locks[msg.sender];
+
+        require(newLock.startTimestamp > 0, "Lock not found");
+        // require(now > newLock.startTimestamp);
+        require(newLock.startTimestamp + newLock.duration > now, "Lock expired");
+
+        uint256 elapsed = now - newLock.startTimestamp;
+        newLock.startTimestamp += elapsed.mul(_amount).div(_amount.add(newLock.amount));
+        newLock.amount += _amount;
+
+        locks[msg.sender] = newLock;
+
+        token.transferFrom(msg.sender, address(this), _amount);
+
+        _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], newLock);
     }
 
-    function unstake() external returns (uint256) {
+    function increaseUnlockTime(uint256 _endTimestamp) external {
+        Lock memory newLock = locks[msg.sender];
+
+        require(newLock.startTimestamp > 0, "Lock not found");
+        require(newLock.startTimestamp + newLock.duration > now, "Lock expired");
+        require(_endTimestamp > newLock.startTimestamp + newLock.duration, "endTimestamp too early");
+        require(_endTimestamp < type(uint32).max, "endTimestamp too big");
+
+        newLock.duration = _endTimestamp - newLock.startTimestamp;
+
+        locks[msg.sender] = newLock;
+
+        _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], newLock);
+    }
+
+    function withdrawAll() external {
         Lock memory userLock = locks[msg.sender];
 
         uint256 amount = userLock.amount;
 
-        if (amount == 0) return 0;
+        require(userLock.startTimestamp > 0, "Lock not found");
 
         if (userLock.startTimestamp + userLock.duration > now) {
             amount = (amount * (BASE_POINTS - penalty)) / BASE_POINTS;
@@ -100,29 +143,138 @@ contract Staking is Ownable {
 
         delete locks[msg.sender];
 
-        return amount;
+        _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], Lock(0, 0, 0));
     }
 
-    function getPointsAt(address _owner, uint256 _time) external view returns (uint256) {
-        return _getPoints(_owner, _time);
+    //// View ////
+
+    function getUserInfo(address _owner) external view returns (Lock memory) {
+        return locks[_owner];
     }
 
-    function getPoints(address _owner) external view returns (uint256) {
+    function balanceOf(address _owner) external view returns (uint256) {
         return _getPoints(_owner, now);
+    }
+
+    function balanceOfAt(address _owner, uint256 _block) external view returns (uint256) {
+        return _getPointsAt(_owner, _block);
+    }
+
+    function balanceOfAtTime(address _owner, uint256 _time) external view returns (uint256) {
+        return _getPointsAtTime(_owner, _time);
     }
 
     function _getPoints(address _owner, uint256 _time) internal view returns (uint256) {
         Lock memory userLock = locks[_owner];
+
+        return _calcPoints(userLock, _time);
+    }
+
+    function _calcPoints(Lock memory lock, uint256 timestamp) internal view returns (uint256) {
         uint256 total;
 
-        uint256 elapsed = _time.sub(userLock.startTimestamp);
+        uint256 elapsed = timestamp.sub(lock.startTimestamp);
 
-        uint256 min = elapsed > userLock.duration ? userLock.duration : elapsed;
+        uint256 min = elapsed > lock.duration ? lock.duration : elapsed;
         min = min > DURATION ? DURATION : min;
 
-        total += userLock.amount;
-        total += userLock.amount.mul(BOOST).mul(min).div(DURATION).div(BASE_POINTS);
+        total += lock.amount;
+        total += lock.amount.mul(BOOST).mul(min).div(DURATION).div(BASE_POINTS);
 
         return total;
+    }
+
+    function _getPointsFromCheckpoint(Checkpoint memory checkpoint) internal view returns (uint256) {
+        return _calcPoints(checkpoint.lock, checkpoint.fromTimestamp);
+    }
+
+    function _getPointsAt(address account, uint256 blockNumber) internal view returns (uint256) {
+        require(blockNumber < block.number, "block no in the future");
+
+        uint32 nCheckpoints = numCheckpoints[account];
+        if (nCheckpoints == 0) {
+            return 0;
+        }
+
+        // First check most recent balance
+        if (checkpoints[account][nCheckpoints - 1].fromBlock <= blockNumber) {
+            return _getPointsFromCheckpoint(checkpoints[account][nCheckpoints - 1]);
+        }
+
+        // Next check implicit zero balance
+        if (checkpoints[account][0].fromBlock > blockNumber) {
+            return 0;
+        }
+
+        uint32 lower = 0;
+        uint32 upper = nCheckpoints - 1;
+        while (upper > lower) {
+            uint32 center = upper - (upper - lower) / 2; // ceil, avoiding overflow
+            Checkpoint memory cp = checkpoints[account][center];
+            if (cp.fromBlock == blockNumber) {
+                return _getPointsFromCheckpoint(cp);
+            } else if (cp.fromBlock < blockNumber) {
+                lower = center;
+            } else {
+                upper = center - 1;
+            }
+        }
+        return _getPointsFromCheckpoint(checkpoints[account][lower]);
+    }
+
+    function _getPointsAtTime(address account, uint256 time) internal view returns (uint256) {
+        require(time < now, "timestamp in the future");
+
+        uint32 nCheckpoints = numCheckpoints[account];
+        if (nCheckpoints == 0) {
+            return 0;
+        }
+
+        // First check most recent balance
+        if (checkpoints[account][nCheckpoints - 1].fromTimestamp <= time) {
+            return _getPointsFromCheckpoint(checkpoints[account][nCheckpoints - 1]);
+        }
+
+        // Next check implicit zero balance
+        if (checkpoints[account][0].fromTimestamp > time) {
+            return 0;
+        }
+
+        uint32 lower = 0;
+        uint32 upper = nCheckpoints - 1;
+        while (upper > lower) {
+            uint32 center = upper - (upper - lower) / 2; // ceil, avoiding overflow
+            Checkpoint memory cp = checkpoints[account][center];
+            if (cp.fromTimestamp == time) {
+                return _getPointsFromCheckpoint(cp);
+            } else if (cp.fromTimestamp < time) {
+                lower = center;
+            } else {
+                upper = center - 1;
+            }
+        }
+        return _getPointsFromCheckpoint(checkpoints[account][lower]);
+    }
+
+    function _writeCheckpoint(
+        address user,
+        uint32 nCheckpoints,
+        Lock memory newLock
+    ) internal {
+        uint32 blockNumber = safe32(block.number, "block no exceeds 32 bits");
+
+        if (nCheckpoints > 0 && checkpoints[user][nCheckpoints - 1].fromBlock == blockNumber) {
+            checkpoints[user][nCheckpoints - 1].lock = newLock;
+        } else {
+            checkpoints[user][nCheckpoints] = Checkpoint(blockNumber, uint32(now), newLock);
+            numCheckpoints[user] = nCheckpoints + 1;
+        }
+
+        emit LockChanged(user, blockNumber, now);
+    }
+
+    function safe32(uint256 n, string memory errorMessage) internal pure returns (uint32) {
+        require(n < 2**32, errorMessage);
+        return uint32(n);
     }
 }

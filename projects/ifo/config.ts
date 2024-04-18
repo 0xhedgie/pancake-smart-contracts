@@ -26,9 +26,9 @@ export default {
     mainnet: "0", // TO BE REPLACED
     testnet: "1712114800",
   },
-  Multiplier: {
-    mainnet: "25000",
-    testnet: "25000",
+  Boost: {
+    mainnet: "10000",
+    testnet: "10000",
   },
   Duration: {
     mainnet: 31536000,
