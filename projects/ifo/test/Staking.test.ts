@@ -49,17 +49,17 @@ contract("Staking", async ([alice, bob, carol, ...accounts]) => {
 
     it("stake", async () => {
       const startTime = Number(await time.latest());
-      await mockStaking.createLock(parseEther("1000"), startTime + oneYear, { from: carol });
+      await mockStaking.createLock(parseEther("1000"), startTime + 1 + oneYear, { from: carol });
 
       assert.equal(await mockStaking.balanceOf(carol), String(parseEther("1000")));
 
       const userInfo = await mockStaking.getUserInfo(carol);
 
       assert.equal(userInfo[0].toString(), String(parseEther("1000")));
-      assert.equal(userInfo[1], startTime);
+      assert.equal(userInfo[1], startTime + 1);
       assert.equal(userInfo[2], oneYear);
 
-      await time.increase(oneYear + 1);
+      await time.increase(oneYear);
 
       assert.equal(
         (await mockStaking.balanceOf(carol)).toString(),

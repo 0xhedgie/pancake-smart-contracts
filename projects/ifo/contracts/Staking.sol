@@ -100,7 +100,7 @@ contract Staking is Ownable {
 
         require(newLock.startTimestamp > 0, "Lock not found");
         // require(now > newLock.startTimestamp);
-        require(newLock.startTimestamp + newLock.duration > now, "Lock expired");
+        // require(newLock.startTimestamp + newLock.duration > now, "Lock expired");
 
         uint256 elapsed = now - newLock.startTimestamp;
         newLock.startTimestamp += elapsed.mul(_amount).div(_amount.add(newLock.amount));
@@ -117,7 +117,7 @@ contract Staking is Ownable {
         Lock memory newLock = locks[msg.sender];
 
         require(newLock.startTimestamp > 0, "Lock not found");
-        require(newLock.startTimestamp + newLock.duration > now, "Lock expired");
+        // require(newLock.startTimestamp + newLock.duration > now, "Lock expired");
         require(_endTimestamp > newLock.startTimestamp + newLock.duration, "endTimestamp too early");
         require(_endTimestamp < type(uint32).max, "endTimestamp too big");
 
