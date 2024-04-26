@@ -2,7 +2,7 @@
 pragma solidity ^0.6.12;
 
 /** @title IIFO.
- * @notice It is an interface for IFOV2.sol
+ * @notice It is an interface for IFOV1.sol
  */
 interface IIFO {
     /**

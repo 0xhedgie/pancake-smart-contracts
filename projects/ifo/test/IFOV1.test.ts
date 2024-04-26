@@ -8,11 +8,11 @@ import { BN, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers"
 
 import { StandardMerkleTree } from "@openzeppelin/merkle-tree";
 
-const IFOV2 = artifacts.require("./IFOV2.sol");
+const IFOV1 = artifacts.require("./IFOV1.sol");
 const MockERC20 = artifacts.require("./utils/MockERC20.sol");
 const MockERC20Decimals = artifacts.require("./utils/MockERC20Decimals.sol");
 
-contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) => {
+contract("IFO V1", async ([alice, bob, carol, david, erin, frank, ...accounts]) => {
   // SectaProfile
   const _totalInitSupply = parseEther("5000000"); // 50 SECTA
 
@@ -110,7 +110,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       _endTimestamp = new BN(await time.latest()).add(new BN("350"));
 
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
+      mockIFO = await IFOV1.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
       });
 
@@ -963,13 +963,13 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
   });
 
   /*
-   * IFO 2 - UNDERFLOW
+   * IFO 1 - UNDERFLOW
    * Pool 0 : Underflow with 0.25x underflow
    * Pool 1: Underflow with 0.58x underflow
    */
 
-  describe("IFO #2 - UNDERFLOW FOR BOTH POOLS", async () => {
-    it("The IFO #2 is deployed and initialized", async () => {
+  describe("IFO #1 - UNDERFLOW FOR BOTH POOLS", async () => {
+    it("The IFO #1 is deployed and initialized", async () => {
       // IFO timestamps
       _startTimestamp = new BN(await time.latest()).add(new BN("50"));
       _endTimestamp = new BN(await time.latest()).add(new BN("250"));
@@ -990,20 +990,20 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("It is not possible to set an IFO with wrong ERC20 tokens", async () => {
       await expectRevert(
-        IFOV2.new(mockLP.address, mockLP.address, _startTimestamp, _endTimestamp, alice, {
+        IFOV1.new(mockLP.address, mockLP.address, _startTimestamp, _endTimestamp, alice, {
           from: alice,
         }),
         "Operations: Tokens must be different"
       );
       await expectRevert(
-        IFOV2.new(alice, mockOC.address, _startTimestamp, _endTimestamp, alice, {
+        IFOV1.new(alice, mockOC.address, _startTimestamp, _endTimestamp, alice, {
           from: alice,
         }),
         "function call to a non-contract account"
       );
 
       await expectRevert(
-        IFOV2.new(mockLP.address, mockIFO.address, _startTimestamp, _endTimestamp, alice, {
+        IFOV1.new(mockLP.address, mockIFO.address, _startTimestamp, _endTimestamp, alice, {
           from: alice,
         }),
         "function selector was not recognized and there's no fallback function"
@@ -1012,7 +1012,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
 
     it("IFO is deployed correctly", async () => {
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
+      mockIFO = await IFOV1.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
       });
 
@@ -1077,7 +1077,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
     });
 
-    it("All users are approving the tokens to be spent by the IFO #2", async () => {
+    it("All users are approving the tokens to be spent by the IFO #1", async () => {
       // Bob, Carol, David, Erin
       for (const thisUser of [bob, carol, david, erin]) {
         await mockLP.approve(mockIFO.address, parseEther("1000"), {
@@ -1251,7 +1251,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       raisingAmountPool1 = parseEther("12");
 
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
+      mockIFO = await IFOV1.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
       });
 
@@ -1460,7 +1460,7 @@ contract("IFO V2", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       raisingAmountPool1 = parseEther("12");
 
       // Alice deploys the IFO setting herself as the contract admin
-      mockIFO = await IFOV2.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
+      mockIFO = await IFOV1.new(mockLP.address, mockOC.address, _startTimestamp, _endTimestamp, alice, {
         from: alice,
       });
 

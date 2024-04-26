@@ -170,18 +170,13 @@ contract Staking is Ownable {
         return _calcPoints(userLock, _time);
     }
 
-    function _calcPoints(Lock memory lock, uint256 timestamp) internal view returns (uint256) {
-        uint256 total;
-
+    function _calcPoints(Lock memory lock, uint256 timestamp) internal view returns (uint256 points) {
         uint256 elapsed = timestamp.sub(lock.startTimestamp);
 
         uint256 min = elapsed > lock.duration ? lock.duration : elapsed;
         min = min > DURATION ? DURATION : min;
 
-        total += lock.amount;
-        total += lock.amount.mul(BOOST).mul(min).div(DURATION).div(BASE_POINTS);
-
-        return total;
+        points = lock.amount.mul(BOOST).mul(min).div(DURATION).div(BASE_POINTS);
     }
 
     function _getPointsFromCheckpoint(Checkpoint memory checkpoint) internal view returns (uint256) {

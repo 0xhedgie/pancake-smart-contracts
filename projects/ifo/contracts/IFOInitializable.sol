@@ -7,12 +7,12 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "profile-nft-gamification/contracts/SectaProfile.sol";
 
-import "./interfaces/IIFOV2.sol";
+import "./interfaces/IIFOV1.sol";
 
 /**
  * @title IFOInitializable
  */
-contract IFOInitializable is IIFOV2, ReentrancyGuard, Ownable {
+contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 

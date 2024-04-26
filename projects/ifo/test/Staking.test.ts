@@ -12,7 +12,6 @@ const MockERC20 = artifacts.require("./utils/MockERC20.sol");
 contract("Staking", async ([alice, bob, carol, ...accounts]) => {
   const boost = 10000; // 100% = 2x
   const basePoints = 10000;
-  const boosted = boost + basePoints;
   const oneYear = 31536000;
   const penalty = 500; // 5%
 
@@ -44,14 +43,14 @@ contract("Staking", async ([alice, bob, carol, ...accounts]) => {
         });
       }
 
-      console.log((await time.latest()) + oneYear);
+      console.log("Current Timestamp", (await time.latest()) + oneYear);
     });
 
     it("stake", async () => {
       const startTime = Number(await time.latest());
       await mockStaking.createLock(parseEther("1000"), startTime + 1 + oneYear, { from: carol });
 
-      assert.equal(await mockStaking.balanceOf(carol), String(parseEther("1000")));
+      assert.equal(await mockStaking.balanceOf(carol), 0);
 
       const userInfo = await mockStaking.getUserInfo(carol);
 
@@ -63,7 +62,7 @@ contract("Staking", async ([alice, bob, carol, ...accounts]) => {
 
       assert.equal(
         (await mockStaking.balanceOf(carol)).toString(),
-        String(parseEther("1000").mul(boosted).div(basePoints))
+        String(parseEther("1000").mul(boost).div(basePoints))
       );
     });
 

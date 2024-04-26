@@ -12,10 +12,10 @@ const main = async () => {
   await run("compile");
   console.log("Compiled contracts!");
 
-  const IFOV2 = await ethers.getContractFactory("IFOV2");
+  const IFOV1 = await ethers.getContractFactory("IFOV1");
 
   if (name === "mainnet") {
-    const ifoV2 = await IFOV2.deploy(
+    const ifoV1 = await IFOV1.deploy(
       config.LPToken[name],
       config.OfferingToken[name],
       config.StartTimestamp[name],
@@ -23,12 +23,12 @@ const main = async () => {
       config.AdminAddress[name]
     );
 
-    await ifoV2.deployed();
-    console.log("IFOV2 deployed to:", ifoV2.address);
+    await ifoV1.deployed();
+    console.log("IFOV1 deployed to:", ifoV1.address);
   } else if (name === "testnet") {
     console.log("ethers.js version", ethers.version);
 
-    const ifoV2 = await IFOV2.deploy(
+    const ifoV1 = await IFOV1.deploy(
       config.LPToken[name],
       config.OfferingToken[name],
       config.StartTimestamp[name],
@@ -36,10 +36,10 @@ const main = async () => {
       config.AdminAddress[name]
     );
 
-    await ifoV2.deployed();
-    console.log("IFOV2 deployed to:", ifoV2.address);
+    await ifoV1.deployed();
+    console.log("IFOV1 deployed to:", ifoV1.address);
 
-    await verifyContract(ifoV2.address, [
+    await verifyContract(ifoV1.address, [
       config.LPToken[name],
       config.OfferingToken[name],
       config.StartTimestamp[name],
@@ -59,10 +59,10 @@ const main = async () => {
 
     // Transfer the offering total amount to the IFO contract
 
-    await offeringToken.transfer(ifoV2.address, offeringAmountPool0);
+    await offeringToken.transfer(ifoV1.address, offeringAmountPool0);
 
     // Pool 0 is set
-    await ifoV2.setPool(
+    await ifoV1.setPool(
       offeringAmountPool0,
       raisingAmountPool0,
       0, // limit
@@ -80,10 +80,10 @@ const main = async () => {
     const raisingAmountPool1 = ethers.utils.parseUnits("800000", 6);
 
     // Transfer the offering total amount to the IFO contract
-    await offeringToken.transfer(ifoV2.address, offeringAmountPool1);
+    await offeringToken.transfer(ifoV1.address, offeringAmountPool1);
 
     // Pool 1 is set
-    await ifoV2.setPool(
+    await ifoV1.setPool(
       offeringAmountPool1,
       raisingAmountPool1,
       0, // limit

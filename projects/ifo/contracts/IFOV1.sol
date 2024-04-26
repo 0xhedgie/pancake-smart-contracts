@@ -11,11 +11,11 @@ import "./interfaces/IIFO.sol";
 import "./libraries/MerkleProof.sol";
 
 /**
- * @title IFOV2
+ * @title IFOV1
  * @notice It is an upgrade of the original IFO model with 2 pools and
  * other SectaProfile requirements.
  */
-contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
+contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 

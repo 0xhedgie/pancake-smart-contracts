@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "profile-nft-gamification/contracts/SectaProfile.sol";
 
-import "./interfaces/IIFOV2.sol";
+import "./interfaces/IIFOV1.sol";
 import "secta-cake-vault/contracts/IFOPool.sol";
 import "secta-cake-vault/contracts/test/CakeToken.sol";
 import "secta-cake-vault/contracts/test/SyrupBar.sol";
@@ -16,7 +16,7 @@ import "secta-cake-vault/contracts/test/MasterChef.sol";
 /**
  * @title IFOInitializableV3
  */
-contract IFOInitializableV3 is IIFOV2, ReentrancyGuard, Ownable {
+contract IFOInitializableV3 is IIFOV1, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 

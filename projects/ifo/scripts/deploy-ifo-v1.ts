@@ -11,10 +11,10 @@ const main = async () => {
   await run("compile");
   console.log("Compiled contracts!");
 
-  const IFOV2 = await ethers.getContractFactory("IFOV2");
+  const IFOV1 = await ethers.getContractFactory("IFOV1");
 
   if (name === "mainnet") {
-    const ifoV2 = await IFOV2.deploy(
+    const ifoV1 = await IFOV1.deploy(
       config.LPToken[name],
       config.OfferingToken[name],
       config.StartTimestamp[name],
@@ -22,8 +22,8 @@ const main = async () => {
       config.AdminAddress[name]
     );
 
-    await ifoV2.deployed();
-    console.log("IFOV2 deployed to:", ifoV2.address);
+    await ifoV1.deployed();
+    console.log("IFOV1 deployed to:", ifoV1.address);
   } else if (name === "testnet") {
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     const offeringToken = await MockERC20.deploy("Offering Coin", "HTOC", parseEther("10000000"));
@@ -31,7 +31,7 @@ const main = async () => {
     await offeringToken.deployed();
     console.log("OC32 token deployed to:", offeringToken.address);
 
-    const ifoV2 = await IFOV2.deploy(
+    const ifoV1 = await IFOV1.deploy(
       config.LPToken[name],
       offeringToken.address,
       config.StartTimestamp[name],
@@ -39,8 +39,8 @@ const main = async () => {
       config.AdminAddress[name]
     );
 
-    await ifoV2.deployed();
-    console.log("IFOV2 deployed to:", ifoV2.address);
+    await ifoV1.deployed();
+    console.log("IFOV1 deployed to:", ifoV1.address);
   }
 };
 main()

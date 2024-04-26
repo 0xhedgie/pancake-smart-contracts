@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.6.12;
 
-/** @title IIFOV2.
- * @notice It is an interface for IFOV2.sol
+/** @title IIFOV1.
+ * @notice It is an interface for IFOInitializable.sol
  */
-interface IIFOV2 {
+interface IIFOV1 {
     /**
      * @notice It allows users to deposit LP tokens to pool
      * @param _amount: the number of LP token used (18 decimals)
