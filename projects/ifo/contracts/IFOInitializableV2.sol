@@ -8,11 +8,15 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "profile-nft-gamification/contracts/SectaProfile.sol";
 
 import "./interfaces/IIFOV1.sol";
+import "secta-cake-vault/contracts/IFOPool.sol";
+import "secta-cake-vault/contracts/test/CakeToken.sol";
+import "secta-cake-vault/contracts/test/SyrupBar.sol";
+import "secta-cake-vault/contracts/test/MasterChef.sol";
 
 /**
- * @title IFOInitializable
+ * @title IFOInitializableV2
  */
-contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
+contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
@@ -22,8 +26,8 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
     // The address of the smart chef factory
     address public immutable IFO_FACTORY;
 
-    // Max blocks (for sanity checks)
-    uint256 public MAX_BUFFER_BLOCKS;
+    // Max time (for sanity checks)
+    uint256 public MAX_BUFFER_TIME;
 
     // The LP token used
     IERC20 public lpToken;
@@ -34,14 +38,17 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
     // SectaProfile
     SectaProfile public sectaProfile;
 
+    // IFOPool contract
+    IFOPool public ifoPool;
+
     // Whether it is initialized
     bool public isInitialized;
 
-    // The block number when IFO starts
-    uint256 public startBlock;
+    // The now when IFO starts
+    uint256 public startTimestamp;
 
-    // The block number when IFO ends
-    uint256 public endBlock;
+    // The now when IFO ends
+    uint256 public endTimestamp;
 
     // The campaignId for the IFO
     uint256 public campaignId;
@@ -63,6 +70,9 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
 
     // It maps the address to pool id to UserInfo
     mapping(address => mapping(uint8 => UserInfo)) private _userInfo;
+
+    // It maps user address to accumulative deposit lptoken amount
+    mapping(address => uint256) public userAccumulateDeposits;
 
     // Struct that contains each pool characteristics
     struct PoolCharacteristics {
@@ -92,8 +102,8 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
     // Harvest event
     event Harvest(address indexed user, uint256 offeringAmount, uint256 excessAmount, uint8 indexed pid);
 
-    // Event for new start & end blocks
-    event NewStartAndEndBlocks(uint256 startBlock, uint256 endBlock);
+    // Event for new start & end timestamps
+    event NewStartAndEndTimestamps(uint256 startTimestamp, uint256 endTimestamp);
 
     // Event with point parameters for IFO
     event PointParametersSet(uint256 campaignId, uint256 numberPoints, uint256 thresholdPoints);
@@ -121,19 +131,21 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
      * @param _lpToken: the LP token used
      * @param _offeringToken: the token that is offered for the IFO
      * @param _sectaProfileAddress: the address of the SectaProfile
-     * @param _startBlock: the start block for the IFO
-     * @param _endBlock: the end block for the IFO
-     * @param _maxBufferBlocks: maximum buffer of blocks from the current block number
+     * @param _ifoPoolAddress: the address of the IFOPool
+     * @param _startTimestamp: the start timestamp for the IFO
+     * @param _endTimestamp: the end timestamp for the IFO
+     * @param _maxBufferTime: maximum buffer of time from the current now
      * @param _adminAddress: the admin address for handling tokens
      */
     function initialize(
         address _lpToken,
         address _offeringToken,
         address _sectaProfileAddress,
-        uint256 _startBlock,
-        uint256 _endBlock,
-        uint256 _maxBufferBlocks,
-        address _adminAddress
+        uint256 _startTimestamp,
+        uint256 _endTimestamp,
+        uint256 _maxBufferTime,
+        address _adminAddress,
+        address _ifoPoolAddress
     ) public {
         require(!isInitialized, "Operations: Already initialized");
         require(msg.sender == IFO_FACTORY, "Operations: Not factory");
@@ -144,9 +156,10 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
         lpToken = IERC20(_lpToken);
         offeringToken = IERC20(_offeringToken);
         sectaProfile = SectaProfile(_sectaProfileAddress);
-        startBlock = _startBlock;
-        endBlock = _endBlock;
-        MAX_BUFFER_BLOCKS = _maxBufferBlocks;
+        ifoPool = IFOPool(_ifoPoolAddress);
+        startTimestamp = _startTimestamp;
+        endTimestamp = _endTimestamp;
+        MAX_BUFFER_TIME = _maxBufferTime;
 
         // Transfer ownership to admin
         transferOwnership(_adminAddress);
@@ -170,17 +183,21 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
             "Deposit: Pool not set"
         );
 
-        // Checks whether the block number is not too early
-        require(block.number > startBlock, "Deposit: Too early");
+        // Checks whether the now is not too early
+        require(now > startTimestamp, "Deposit: Too early");
 
-        // Checks whether the block number is not too late
-        require(block.number < endBlock, "Deposit: Too late");
+        // Checks whether the now is not too late
+        require(now < endTimestamp, "Deposit: Too late");
 
         // Checks that the amount deposited is not inferior to 0
         require(_amount > 0, "Deposit: Amount must be > 0");
 
         // Verify tokens were deposited properly
         require(offeringToken.balanceOf(address(this)) >= totalTokensOffered, "Deposit: Tokens not deposited properly");
+
+        // getUserCredit from IFOPool
+        uint256 ifoCredit = ifoPool.getUserCredit(msg.sender);
+        require(userAccumulateDeposits[msg.sender].add(_amount) <= ifoCredit, "Not enough IFO credit left");
 
         // Transfers funds to this contract
         lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
@@ -200,6 +217,9 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
         // Updates the totalAmount for pool
         _poolInformation[_pid].totalAmountPool = _poolInformation[_pid].totalAmountPool.add(_amount);
 
+        // Updates Accumulative deposit lptokens
+        userAccumulateDeposits[msg.sender] = userAccumulateDeposits[msg.sender].add(_amount);
+
         emit Deposit(msg.sender, _amount, _pid);
     }
 
@@ -209,7 +229,7 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
      */
     function harvestPool(uint8 _pid) external override nonReentrant notContract {
         // Checks whether it is too early to harvest
-        require(block.number > endBlock, "Harvest: Too early");
+        require(now > endTimestamp, "Harvest: Too early");
 
         // Checks whether pool id is valid
         require(_pid < NUMBER_POOLS, "Harvest: Non valid pool id");
@@ -302,7 +322,7 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
         bool _hasTax,
         uint8 _pid
     ) external override onlyOwner {
-        require(block.number < startBlock, "Operations: IFO has started");
+        require(now < startTimestamp, "Operations: IFO has started");
         require(_pid < NUMBER_POOLS, "Operations: Pool does not exist");
 
         _poolInformation[_pid].offeringAmountPool = _offeringAmountPool;
@@ -334,7 +354,7 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
         uint256 _numberPoints,
         uint256 _thresholdPoints
     ) external override onlyOwner {
-        require(block.number < endBlock, "Operations: IFO has ended");
+        require(now < endTimestamp, "Operations: IFO has ended");
 
         numberPoints = _numberPoints;
         campaignId = _campaignId;
@@ -344,21 +364,21 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @notice It allows the admin to update start and end blocks
-     * @param _startBlock: the new start block
-     * @param _endBlock: the new end block
+     * @notice It allows the admin to update start and end timestamps
+     * @param _startTimestamp: the new start timestamp
+     * @param _endTimestamp: the new end timestamp
      * @dev This function is only callable by admin.
      */
-    function updateStartAndEndBlocks(uint256 _startBlock, uint256 _endBlock) external onlyOwner {
-        require(_endBlock < (block.number + MAX_BUFFER_BLOCKS), "Operations: EndBlock too far");
-        require(block.number < startBlock, "Operations: IFO has started");
-        require(_startBlock < _endBlock, "Operations: New startBlock must be lower than new endBlock");
-        require(block.number < _startBlock, "Operations: New startBlock must be higher than current block");
+    function updateStartAndEndTimestamps(uint256 _startTimestamp, uint256 _endTimestamp) external onlyOwner {
+        require(_endTimestamp < (now + MAX_BUFFER_TIME), "Operations: EndTimestamp too far");
+        require(now < startTimestamp, "Operations: IFO has started");
+        require(_startTimestamp < _endTimestamp, "Operations: New startTimestamp must be lower than new endTimestamp");
+        require(now < _startTimestamp, "Operations: New startTimestamp must be higher than current timestamp");
 
-        startBlock = _startBlock;
-        endBlock = _endBlock;
+        startTimestamp = _startTimestamp;
+        endTimestamp = _endTimestamp;
 
-        emit NewStartAndEndBlocks(_startBlock, _endBlock);
+        emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
     }
 
     /**
@@ -509,8 +529,11 @@ contract IFOInitializable is IIFOV1, ReentrancyGuard, Ownable {
         returns (uint256)
     {
         uint256 ratioOverflow = _totalAmountPool.div(_raisingAmountPool);
-
-        if (ratioOverflow >= 500) {
+        if (ratioOverflow >= 1500) {
+            return 500000000; // 0.05%
+        } else if (ratioOverflow >= 1000) {
+            return 1000000000; // 0.1%
+        } else if (ratioOverflow >= 500) {
             return 2000000000; // 0.2%
         } else if (ratioOverflow >= 250) {
             return 2500000000; // 0.25%

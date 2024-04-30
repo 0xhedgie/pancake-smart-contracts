@@ -63,7 +63,7 @@
   },
   {
     "inputs": [],
-    "name": "MAX_BUFFER_BLOCKS",
+    "name": "MAX_BUFFER_TIME",
     "outputs": [
       {
         "internalType": "uint256",
@@ -88,12 +88,12 @@
       },
       {
         "internalType": "uint256",
-        "name": "_startBlock",
+        "name": "_startTimestamp",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_endBlock",
+        "name": "_endTimestamp",
         "type": "uint256"
       },
       {

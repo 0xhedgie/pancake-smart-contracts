@@ -4,8 +4,8 @@ import { artifacts, contract, ethers } from "hardhat";
 import { assert } from "chai";
 import { BN, expectEvent, expectRevert, time, ether } from "@openzeppelin/test-helpers";
 
-const IFOInitializableV3 = artifacts.require("./IFOInitializableV3.sol");
-const IFODeployerV3 = artifacts.require("./IFODeployerV3.sol");
+const IFOInitializableV2 = artifacts.require("./IFOInitializableV2.sol");
+const IFODeployerV2 = artifacts.require("./IFODeployerV2.sol");
 
 const SectaProfile = artifacts.require("profile-nft-gamification/contracts/SectaProfile.sol");
 const MockERC20 = artifacts.require("./utils/MockERC20.sol");
@@ -18,7 +18,7 @@ const IFOPool = artifacts.require("secta-vault/contracts/IFOPool.sol");
 
 const REWARDS_START_BLOCK = 100;
 
-contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
+contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
   // SectaProfile
   const _totalInitSupply = parseEther("5000000"); // 50 SECTA
   const _numberSectaToReactivate = parseEther("5"); // 5 SECTA
@@ -209,9 +209,9 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
     });
   });
 
-  describe("IFO DeployerV3 #0 - Initial set up", async () => {
-    it("The IFODeployerV3 is deployed and initialized", async () => {
-      deployer = await IFODeployerV3.new(sectaProfile.address, {
+  describe("IFO DeployerV2 #0 - Initial set up", async () => {
+    it("The IFODeployerV2 is deployed and initialized", async () => {
+      deployer = await IFODeployerV2.new(sectaProfile.address, {
         from: alice,
       });
     });
@@ -244,7 +244,7 @@ contract("IFO DeployerV3", ([alice, bob, carol, david, erin, frank, ...accounts]
 
       expectEvent(result, "NewIFOContract", { ifoAddress });
 
-      mockIFO = await IFOInitializableV3.at(ifoAddress);
+      mockIFO = await IFOInitializableV2.at(ifoAddress);
 
       result = await mockIFO.updateStartAndEndBlocks(_startBlock, _endBlock, { from: alice });
 

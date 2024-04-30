@@ -2,16 +2,18 @@
 pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "./IFOInitializable.sol";
+import "./IFOInitializableV2.sol";
 
 /**
- * @title IFODeployer
+ * @title IFODeployerV2
  */
-contract IFODeployer is Ownable {
+contract IFODeployerV2 is Ownable {
     using SafeERC20 for IERC20;
 
-    uint256 public constant MAX_BUFFER_BLOCKS = 200000; // 200,000 blocks (6-7 days on BSC)
+    uint256 public constant MAX_BUFFER_TIME = 31 days; // previously, 200,000 blocks (6-7 days on BSC)
 
     address public immutable sectaProfile;
 
@@ -30,40 +32,42 @@ contract IFODeployer is Ownable {
      * @notice It creates the IFO contract and initializes the contract.
      * @param _lpToken: the LP token used
      * @param _offeringToken: the token that is offered for the IFO
-     * @param _startBlock: the start block for the IFO
-     * @param _endBlock: the end block for the IFO
+     * @param _startTimestamp: the start timestamp for the IFO
+     * @param _endTimestamp: the end timestamp for the IFO
      * @param _adminAddress: the admin address for handling tokens
      */
     function createIFO(
         address _lpToken,
         address _offeringToken,
-        uint256 _startBlock,
-        uint256 _endBlock,
-        address _adminAddress
+        uint256 _startTimestamp,
+        uint256 _endTimestamp,
+        address _adminAddress,
+        address _ifoPoolAddress
     ) external onlyOwner {
         require(IERC20(_lpToken).totalSupply() >= 0);
         require(IERC20(_offeringToken).totalSupply() >= 0);
         require(_lpToken != _offeringToken, "Operations: Tokens must be be different");
-        require(_endBlock < (block.number + MAX_BUFFER_BLOCKS), "Operations: EndBlock too far");
-        require(_startBlock < _endBlock, "Operations: StartBlock must be inferior to endBlock");
-        require(_startBlock > block.number, "Operations: StartBlock must be greater than current block");
+        require(_endTimestamp < (now + MAX_BUFFER_TIME), "Operations: EndTimestamp too far");
+        require(_startTimestamp < _endTimestamp, "Operations: StartTimestamp must be inferior to endTimestamp");
+        require(_startTimestamp > now, "Operations: StartTimestamp must be greater than current timestamp");
 
-        bytes memory bytecode = type(IFOInitializable).creationCode;
-        bytes32 salt = keccak256(abi.encodePacked(_lpToken, _offeringToken, _startBlock));
+        bytes memory bytecode = type(IFOInitializableV2).creationCode;
+        bytes32 salt = keccak256(abi.encodePacked(_lpToken, _offeringToken, _startTimestamp));
         address ifoAddress;
 
         assembly {
             ifoAddress := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
 
-        IFOInitializable(ifoAddress).initialize(
+        IFOInitializableV2(ifoAddress).initialize(
             _lpToken,
             _offeringToken,
             sectaProfile,
-            _startBlock,
-            _endBlock,
-            MAX_BUFFER_BLOCKS,
-            _adminAddress
+            _startTimestamp,
+            _endTimestamp,
+            MAX_BUFFER_TIME,
+            _adminAddress,
+            _ifoPoolAddress
         );
 
         emit NewIFOContract(ifoAddress);

@@ -968,8 +968,8 @@ contract("IFO V1", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
    * Pool 1: Underflow with 0.58x underflow
    */
 
-  describe("IFO #1 - UNDERFLOW FOR BOTH POOLS", async () => {
-    it("The IFO #1 is deployed and initialized", async () => {
+  describe("IFO #2 - UNDERFLOW FOR BOTH POOLS", async () => {
+    it("The IFO #2 is deployed and initialized", async () => {
       // IFO timestamps
       _startTimestamp = new BN(await time.latest()).add(new BN("50"));
       _endTimestamp = new BN(await time.latest()).add(new BN("250"));
@@ -1077,7 +1077,7 @@ contract("IFO V1", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
     });
 
-    it("All users are approving the tokens to be spent by the IFO #1", async () => {
+    it("All users are approving the tokens to be spent by the IFO #2", async () => {
       // Bob, Carol, David, Erin
       for (const thisUser of [bob, carol, david, erin]) {
         await mockLP.approve(mockIFO.address, parseEther("1000"), {

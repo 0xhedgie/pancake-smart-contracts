@@ -184,7 +184,7 @@ contract Staking is Ownable {
     }
 
     function _getPointsAt(address account, uint256 blockNumber) internal view returns (uint256) {
-        require(blockNumber < block.number, "block no in the future");
+        require(blockNumber < now, "block no in the future");
 
         uint32 nCheckpoints = numCheckpoints[account];
         if (nCheckpoints == 0) {
@@ -256,7 +256,7 @@ contract Staking is Ownable {
         uint32 nCheckpoints,
         Lock memory newLock
     ) internal {
-        uint32 blockNumber = safe32(block.number, "block no exceeds 32 bits");
+        uint32 blockNumber = safe32(now, "block no exceeds 32 bits");
 
         if (nCheckpoints > 0 && checkpoints[user][nCheckpoints - 1].fromBlock == blockNumber) {
             checkpoints[user][nCheckpoints - 1].lock = newLock;

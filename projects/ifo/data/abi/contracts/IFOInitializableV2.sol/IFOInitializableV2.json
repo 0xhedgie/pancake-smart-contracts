@@ -104,17 +104,17 @@
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "startBlock",
+        "name": "startTimestamp",
         "type": "uint256"
       },
       {
         "indexed": false,
         "internalType": "uint256",
-        "name": "endBlock",
+        "name": "endTimestamp",
         "type": "uint256"
       }
     ],
-    "name": "NewStartAndEndBlocks",
+    "name": "NewStartAndEndTimestamps",
     "type": "event"
   },
   {
@@ -201,7 +201,7 @@
   },
   {
     "inputs": [],
-    "name": "MAX_BUFFER_BLOCKS",
+    "name": "MAX_BUFFER_TIME",
     "outputs": [
       {
         "internalType": "uint256",
@@ -258,7 +258,7 @@
   },
   {
     "inputs": [],
-    "name": "endBlock",
+    "name": "endTimestamp",
     "outputs": [
       {
         "internalType": "uint256",
@@ -301,6 +301,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "ifoPool",
+    "outputs": [
+      {
+        "internalType": "contract IFOPool",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "address",
@@ -319,22 +332,27 @@
       },
       {
         "internalType": "uint256",
-        "name": "_startBlock",
+        "name": "_startTimestamp",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_endBlock",
+        "name": "_endTimestamp",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_maxBufferBlocks",
+        "name": "_maxBufferTime",
         "type": "uint256"
       },
       {
         "internalType": "address",
         "name": "_adminAddress",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_ifoPoolAddress",
         "type": "address"
       }
     ],
@@ -481,7 +499,7 @@
   },
   {
     "inputs": [],
-    "name": "startBlock",
+    "name": "startTimestamp",
     "outputs": [
       {
         "internalType": "uint256",
@@ -558,18 +576,37 @@
     "inputs": [
       {
         "internalType": "uint256",
-        "name": "_startBlock",
+        "name": "_startTimestamp",
         "type": "uint256"
       },
       {
         "internalType": "uint256",
-        "name": "_endBlock",
+        "name": "_endTimestamp",
         "type": "uint256"
       }
     ],
-    "name": "updateStartAndEndBlocks",
+    "name": "updateStartAndEndTimestamps",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "name": "userAccumulateDeposits",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
