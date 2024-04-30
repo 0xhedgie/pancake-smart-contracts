@@ -20,12 +20,11 @@ contract Staking is Ownable {
     struct Lock {
         uint256 amount;
         uint256 startTimestamp;
-        uint256 duration;
     }
 
     uint256 public immutable BOOST; // default 10000
 
-    uint256 public immutable DURATION; // default 365 days
+    uint256 public immutable MAX_DURATION; // default 365 days
 
     uint256 public constant BASE_POINTS = 10000;
 
@@ -65,7 +64,7 @@ contract Staking is Ownable {
         token = IERC20(_token);
 
         BOOST = _boost;
-        DURATION = _duration;
+        MAX_DURATION = _duration;
 
         penalty = _penalty;
     }
@@ -74,17 +73,14 @@ contract Staking is Ownable {
         penalty = _penalty;
     }
 
-    function createLock(uint256 _amount, uint256 _endTimestamp) external {
+    function createLock(uint256 _amount) external {
         require(_amount > 0, "amount 0");
-        require(_endTimestamp > now, "endTimestamp too old");
-
-        require(_endTimestamp < type(uint32).max, "endTimestamp too big");
 
         Lock memory newLock = locks[msg.sender];
 
         require(newLock.startTimestamp == 0, "Lock exists");
 
-        newLock = Lock(_amount, now, _endTimestamp - now);
+        newLock = Lock(_amount, now);
 
         locks[msg.sender] = newLock;
 
@@ -100,7 +96,6 @@ contract Staking is Ownable {
 
         require(newLock.startTimestamp > 0, "Lock not found");
         // require(now > newLock.startTimestamp);
-        // require(newLock.startTimestamp + newLock.duration > now, "Lock expired");
 
         uint256 elapsed = now - newLock.startTimestamp;
         newLock.startTimestamp += elapsed.mul(_amount).div(_amount.add(newLock.amount));
@@ -113,21 +108,6 @@ contract Staking is Ownable {
         _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], newLock);
     }
 
-    function increaseUnlockTime(uint256 _endTimestamp) external {
-        Lock memory newLock = locks[msg.sender];
-
-        require(newLock.startTimestamp > 0, "Lock not found");
-        // require(newLock.startTimestamp + newLock.duration > now, "Lock expired");
-        require(_endTimestamp > newLock.startTimestamp + newLock.duration, "endTimestamp too early");
-        require(_endTimestamp < type(uint32).max, "endTimestamp too big");
-
-        newLock.duration = _endTimestamp - newLock.startTimestamp;
-
-        locks[msg.sender] = newLock;
-
-        _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], newLock);
-    }
-
     function withdrawAll() external {
         Lock memory userLock = locks[msg.sender];
 
@@ -135,15 +115,13 @@ contract Staking is Ownable {
 
         require(userLock.startTimestamp > 0, "Lock not found");
 
-        if (userLock.startTimestamp + userLock.duration > now) {
-            amount = (amount * (BASE_POINTS - penalty)) / BASE_POINTS;
-        }
+        amount -= (penalty * amount) / BASE_POINTS;
 
         token.transfer(msg.sender, amount);
 
         delete locks[msg.sender];
 
-        _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], Lock(0, 0, 0));
+        _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], Lock(0, 0));
     }
 
     //// View ////
@@ -173,10 +151,9 @@ contract Staking is Ownable {
     function _calcPoints(Lock memory lock, uint256 timestamp) internal view returns (uint256 points) {
         uint256 elapsed = timestamp.sub(lock.startTimestamp);
 
-        uint256 min = elapsed > lock.duration ? lock.duration : elapsed;
-        min = min > DURATION ? DURATION : min;
+        uint256 min = elapsed > MAX_DURATION ? MAX_DURATION : elapsed;
 
-        points = lock.amount.mul(BOOST).mul(min).div(DURATION).div(BASE_POINTS);
+        points = lock.amount.mul(BOOST).mul(min).div(MAX_DURATION).div(BASE_POINTS);
     }
 
     function _getPointsFromCheckpoint(Checkpoint memory checkpoint) internal view returns (uint256) {

@@ -97,7 +97,7 @@
   },
   {
     "inputs": [],
-    "name": "DURATION",
+    "name": "MAX_DURATION",
     "outputs": [
       {
         "internalType": "uint256",
@@ -211,11 +211,6 @@
             "internalType": "uint256",
             "name": "startTimestamp",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "duration",
-            "type": "uint256"
           }
         ],
         "internalType": "struct Staking.Lock",
@@ -231,11 +226,6 @@
       {
         "internalType": "uint256",
         "name": "_amount",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_endTimestamp",
         "type": "uint256"
       }
     ],
@@ -265,11 +255,6 @@
             "internalType": "uint256",
             "name": "startTimestamp",
             "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "duration",
-            "type": "uint256"
           }
         ],
         "internalType": "struct Staking.Lock",
@@ -289,19 +274,6 @@
       }
     ],
     "name": "increaseLockAmount",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "_endTimestamp",
-        "type": "uint256"
-      }
-    ],
-    "name": "increaseUnlockTime",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"

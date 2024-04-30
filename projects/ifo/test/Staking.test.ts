@@ -48,7 +48,7 @@ contract("Staking", async ([alice, bob, carol, ...accounts]) => {
 
     it("stake", async () => {
       const startTime = Number(await time.latest());
-      await mockStaking.createLock(parseEther("1000"), startTime + 1 + oneYear, { from: carol });
+      await mockStaking.createLock(parseEther("1000"), { from: carol });
 
       assert.equal(await mockStaking.balanceOf(carol), 0);
 
@@ -56,7 +56,6 @@ contract("Staking", async ([alice, bob, carol, ...accounts]) => {
 
       assert.equal(userInfo[0].toString(), String(parseEther("1000")));
       assert.equal(userInfo[1], startTime + 1);
-      assert.equal(userInfo[2], oneYear);
 
       await time.increase(oneYear);
 
@@ -69,19 +68,27 @@ contract("Staking", async ([alice, bob, carol, ...accounts]) => {
     it("unstake", async () => {
       await mockStaking.withdrawAll({ from: carol });
 
-      assert.equal((await mockLP.balanceOf(carol)).toString(), String(parseEther("1000")));
+      assert.equal(
+        (await mockLP.balanceOf(carol)).toString(),
+        String(
+          parseEther("1000")
+            .mul(basePoints - penalty)
+            .div(basePoints)
+        )
+      );
 
       assert.equal(await mockStaking.balanceOf(carol), 0);
 
+      await mockLP.mintTokens(parseEther("1000"), { from: carol });
       await mockLP.approve(mockStaking.address, parseEther("1000"), { from: carol });
-      await mockStaking.createLock(parseEther("1000"), Number(await time.latest()) + oneYear, { from: carol });
+      await mockStaking.createLock(parseEther("1000"), { from: carol });
 
       await mockStaking.withdrawAll({ from: carol });
 
       assert.equal(
         await mockLP.balanceOf(carol),
         String(
-          parseEther("1000")
+          parseEther("2000")
             .mul(basePoints - penalty)
             .div(basePoints)
         )
