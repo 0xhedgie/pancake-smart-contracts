@@ -119,8 +119,8 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
     /**
      * @notice Constructor
      */
-    constructor() public {
-        IFO_FACTORY = msg.sender;
+    constructor(address factory) public {
+        IFO_FACTORY = factory;
     }
 
     /**
@@ -332,6 +332,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         } else if (_saleType == SALE_PRIVATE) {
             require(_root != bytes32(0), "Operations: Empty merkle root for private sale");
         } else if (_saleType == SALE_PUBLIC) {
+            require(_root == bytes32(0), "Operations: Public sale should have empty merkle root");
             require(address(stakingPool) != address(0), "Operations: StakingPool needed for public sale");
         } else {
             revert("Operations: Only basic or private/public sale allowed");

@@ -4,16 +4,16 @@ import config from "../config";
 const main = async () => {
   // Get network name: hardhat, testnet or mainnet.
   const { name } = network;
-  console.log(`Deploying to ${name} network...`);
+  console.log(`Setting on ${name} network...`);
 
   // Compile contracts.
   await run("compile");
   console.log("Compiled contracts!");
 
   const IFOV1 = await ethers.getContractFactory("IFOV1");
-  const ifoV2Address = "0xf1c36092a19cfABaAc70B58DD6807C85d1F6C85A"; // update with corresponding deployment address
+  const ifoV1Address = "0xf1c36092a19cfABaAc70B58DD6807C85d1F6C85A"; // update with corresponding deployment address
 
-  const ifoV1 = IFOV1.attach(ifoV2Address);
+  const ifoV1 = IFOV1.attach(ifoV1Address);
 
   await ifoV1.forceUpdateStartAndEndTimestamps(config.StartTimestamp[name], config.EndTimestamp[name]);
 

@@ -46,15 +46,11 @@ contract IFODeployerV2 is Ownable {
         require(_startTimestamp < _endTimestamp, "Operations: StartTimestamp must be inferior to endTimestamp");
         require(_startTimestamp > now, "Operations: StartTimestamp must be greater than current timestamp");
 
-        bytes memory bytecode = type(IFOInitializableV2).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(_lpToken, _offeringToken, _startTimestamp));
-        address ifoAddress;
 
-        assembly {
-            ifoAddress := create2(0, add(bytecode, 32), mload(bytecode), salt)
-        }
+        IFOInitializableV2 ifo = new IFOInitializableV2{salt: salt}(address(this));
 
-        IFOInitializableV2(ifoAddress).initialize(
+        ifo.initialize(
             _lpToken,
             _offeringToken,
             _startTimestamp,
@@ -64,7 +60,7 @@ contract IFODeployerV2 is Ownable {
             _stakingPoolAddress
         );
 
-        emit NewIFOContract(ifoAddress);
+        emit NewIFOContract(address(ifo));
     }
 
     /**

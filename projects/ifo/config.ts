@@ -20,11 +20,11 @@ export default {
   },
   StartTimestamp: {
     mainnet: "0",
-    testnet: "1712104000",
+    testnet: "1715721000",
   },
   EndTimestamp: {
     mainnet: "0",
-    testnet: "1712114800",
+    testnet: "1715730000",
   },
   Boost: {
     mainnet: "10000",
