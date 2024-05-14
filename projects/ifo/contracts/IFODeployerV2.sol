@@ -15,18 +15,13 @@ contract IFODeployerV2 is Ownable {
 
     uint256 public constant MAX_BUFFER_TIME = 31 days; // previously, 200,000 blocks (6-7 days on BSC)
 
-    address public immutable sectaProfile;
-
     event AdminTokenRecovery(address indexed tokenRecovered, uint256 amount);
     event NewIFOContract(address indexed ifoAddress);
 
     /**
      * @notice Constructor
-     * @param _sectaProfile: the address of the SectaProfile
      */
-    constructor(address _sectaProfile) public {
-        sectaProfile = _sectaProfile;
-    }
+    constructor() public {}
 
     /**
      * @notice It creates the IFO contract and initializes the contract.
@@ -42,7 +37,7 @@ contract IFODeployerV2 is Ownable {
         uint256 _startTimestamp,
         uint256 _endTimestamp,
         address _adminAddress,
-        address _ifoPoolAddress
+        address _stakingPoolAddress
     ) external onlyOwner {
         require(IERC20(_lpToken).totalSupply() >= 0);
         require(IERC20(_offeringToken).totalSupply() >= 0);
@@ -62,12 +57,11 @@ contract IFODeployerV2 is Ownable {
         IFOInitializableV2(ifoAddress).initialize(
             _lpToken,
             _offeringToken,
-            sectaProfile,
             _startTimestamp,
             _endTimestamp,
             MAX_BUFFER_TIME,
             _adminAddress,
-            _ifoPoolAddress
+            _stakingPoolAddress
         );
 
         emit NewIFOContract(ifoAddress);

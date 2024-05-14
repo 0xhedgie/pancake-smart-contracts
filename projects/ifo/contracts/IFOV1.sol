@@ -30,7 +30,7 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
     uint8 public constant SALE_PRIVATE = 1;
 
     // Number of pools
-    uint8 public constant numberPools = 2;
+    uint8 public constant NUMBER_POOLS = 2;
 
     // The timestamp number when IFO starts
     uint256 public startTimestamp;
@@ -38,8 +38,8 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
     // The timestamp number when IFO ends
     uint256 public endTimestamp;
 
-    // Array of PoolCharacteristics of size numberPools
-    PoolCharacteristics[numberPools] private _poolInformation;
+    // Array of PoolCharacteristics of size NUMBER_POOLS
+    PoolCharacteristics[NUMBER_POOLS] private _poolInformation;
 
     // It maps the address to pool id to UserInfo
     mapping(address => mapping(uint8 => UserInfo)) private _userInfo;
@@ -129,7 +129,7 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
         bytes32[] memory proof
     ) external override nonReentrant notContract {
         // Checks whether the pool id is valid
-        require(_pid < numberPools, "Deposit: Non valid pool id");
+        require(_pid < NUMBER_POOLS, "Deposit: Non valid pool id");
 
         // Checks if the user is in the merkle tree
         if (_poolInformation[_pid].saleType == SALE_PRIVATE) {
@@ -190,7 +190,7 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
         require(now > endTimestamp, "Harvest: Too early");
 
         // Checks whether pool id is valid
-        require(_pid < numberPools, "Harvest: Non valid pool id");
+        require(_pid < NUMBER_POOLS, "Harvest: Non valid pool id");
 
         // Checks whether the user has participated
         require(_userInfo[msg.sender][_pid].amountPool > 0, "Harvest: Did not participate");
@@ -303,7 +303,7 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
         bytes32 _root
     ) internal {
         require(now < startTimestamp, "Operations: IFO has started");
-        require(_pid < numberPools, "Operations: Pool does not exist");
+        require(_pid < NUMBER_POOLS, "Operations: Pool does not exist");
 
         _poolInformation[_pid].offeringAmountPool = _offeringAmountPool;
         _poolInformation[_pid].raisingAmountPool = _raisingAmountPool;
@@ -333,6 +333,7 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
         emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
     }
 
+    /// danger from owner! remove force* methods before deploy
     /**
      * @notice It allows the admin to update start and end timestamps
      * @param _startTimestamp: the new start timestamp
@@ -440,7 +441,7 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
         uint256[] memory amountPools = new uint256[](_pids.length);
         bool[] memory statusPools = new bool[](_pids.length);
 
-        for (uint8 i = 0; i < numberPools; i++) {
+        for (uint8 i = 0; i < NUMBER_POOLS; i++) {
             amountPools[i] = _userInfo[_user][i].amountPool;
             statusPools[i] = _userInfo[_user][i].claimedPool;
         }

@@ -10,7 +10,7 @@ const main = async () => {
   // eslint-disable-next-line no-console
   console.log("Verifying on network:", name);
 
-  const stakingAddress = "0xa52AB458F6e568b7b320096d77A1191060DCb218"; // update with corresponding address
+  const stakingAddress = "0x9E28CA686bFc8e88Cb3415B9e722c4bc79428227"; // update with corresponding address
 
   await verifyContract(stakingAddress, [
     config.OfferingToken[name],

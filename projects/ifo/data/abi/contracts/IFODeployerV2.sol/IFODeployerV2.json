@@ -1,12 +1,6 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_sectaProfile",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
@@ -103,7 +97,7 @@
       },
       {
         "internalType": "address",
-        "name": "_ifoPoolAddress",
+        "name": "_stakingPoolAddress",
         "type": "address"
       }
     ],
@@ -143,19 +137,6 @@
     "name": "renounceOwnership",
     "outputs": [],
     "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "sectaProfile",
-    "outputs": [
-      {
-        "internalType": "address",
-        "name": "",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "view",
     "type": "function"
   },
   {

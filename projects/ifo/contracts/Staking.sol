@@ -7,20 +7,17 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
+import "./interfaces/IStaking.sol";
+
 /**
  * @title Staking
  * @notice Allocation boosting points by staking
  */
-contract Staking is Ownable {
+contract Staking is Ownable, IStaking {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     mapping(address => Lock) private locks;
-
-    struct Lock {
-        uint256 amount;
-        uint256 startTimestamp;
-    }
 
     uint256 public immutable BOOST; // default 10000
 
@@ -73,7 +70,7 @@ contract Staking is Ownable {
         penalty = _penalty;
     }
 
-    function createLock(uint256 _amount) external {
+    function createLock(uint256 _amount) external override {
         require(_amount > 0, "amount 0");
 
         Lock memory newLock = locks[msg.sender];
@@ -89,7 +86,7 @@ contract Staking is Ownable {
         _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], newLock);
     }
 
-    function increaseLockAmount(uint256 _amount) external {
+    function increaseLockAmount(uint256 _amount) external override {
         require(_amount > 0, "amount 0");
 
         Lock memory newLock = locks[msg.sender];
@@ -108,7 +105,23 @@ contract Staking is Ownable {
         _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], newLock);
     }
 
-    function withdrawAll() external {
+    function withdraw(uint256 _amount) external override {
+        Lock memory userLock = locks[msg.sender];
+
+        require(userLock.startTimestamp > 0, "Lock not found");
+        require(userLock.amount > _amount, "Incorrect amount");
+
+        userLock.amount -= _amount;
+        _amount -= (penalty * _amount) / BASE_POINTS;
+
+        if (_amount > 0) token.transfer(msg.sender, _amount);
+
+        locks[msg.sender].amount = userLock.amount;
+
+        _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], userLock);
+    }
+
+    function withdrawAll() external override {
         Lock memory userLock = locks[msg.sender];
 
         uint256 amount = userLock.amount;
@@ -117,7 +130,7 @@ contract Staking is Ownable {
 
         amount -= (penalty * amount) / BASE_POINTS;
 
-        token.transfer(msg.sender, amount);
+        if (amount > 0) token.transfer(msg.sender, amount);
 
         delete locks[msg.sender];
 
@@ -126,19 +139,19 @@ contract Staking is Ownable {
 
     //// View ////
 
-    function getUserInfo(address _owner) external view returns (Lock memory) {
+    function getUserInfo(address _owner) external view override returns (Lock memory) {
         return locks[_owner];
     }
 
-    function balanceOf(address _owner) external view returns (uint256) {
+    function balanceOf(address _owner) external view override returns (uint256) {
         return _getPoints(_owner, now);
     }
 
-    function balanceOfAt(address _owner, uint256 _block) external view returns (uint256) {
+    function balanceOfAt(address _owner, uint256 _block) external view override returns (uint256) {
         return _getPointsAt(_owner, _block);
     }
 
-    function balanceOfAtTime(address _owner, uint256 _time) external view returns (uint256) {
+    function balanceOfAtTime(address _owner, uint256 _time) external view override returns (uint256) {
         return _getPointsAtTime(_owner, _time);
     }
 

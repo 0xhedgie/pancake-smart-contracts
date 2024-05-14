@@ -1,4 +1,7 @@
 import { ethers, network, run } from "hardhat";
+
+import { tryVerify, verifyContract } from "@sectafi/common/verify";
+import { sleep } from "@sectafi/common/sleep";
 import config from "../config";
 
 const main = async () => {
@@ -11,11 +14,13 @@ const main = async () => {
     await run("compile");
     console.log("Compiled contracts");
 
-    const IFODeployer = await ethers.getContractFactory("IFODeployer");
-    const ifoDeployer = await IFODeployer.deploy(config.SectaProfile[name]);
+    const IFODeployerV2 = await ethers.getContractFactory("IFODeployerV2");
+    const ifoDeployer = await IFODeployerV2.deploy();
 
     await ifoDeployer.deployed();
-    console.log("IFODeployer deployed to:", ifoDeployer.address);
+    console.log("IFODeployerV2 deployed to:", ifoDeployer.address);
+
+    await verifyContract(ifoDeployer.address);
   }
 };
 

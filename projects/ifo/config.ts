@@ -4,13 +4,13 @@ export default {
     testnet: "0x98903fF7ee67b1615C00eBC80c39626dA508150D", // jac
   },
   LPToken: {
-    mainnet: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f", // TO BE REPLACED
+    mainnet: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
 
     // weth 0x2C1b868d6596a18e32E61B901E4060C872647b6C
     testnet: "0xf56dc6695cF1f5c364eDEbC7Dc7077ac9B586068", // USDC
   },
   OfferingToken: {
-    mainnet: "0x0000000000000000000000000000000000000000", // TO BE REPLACED
+    mainnet: "0x0000000000000000000000000000000000000000",
     testnet: "0xbe58d17D397d40fAC21Cb037a62dF2fb11A87715", // SECTA
   },
   SectaProfile: {
@@ -19,11 +19,11 @@ export default {
     testnet: "0x4B683C7E13B6d5D7fd1FeA9530F451954c1A7c8A",
   },
   StartTimestamp: {
-    mainnet: "0", // TO BE REPLACED
+    mainnet: "0",
     testnet: "1712104000",
   },
   EndTimestamp: {
-    mainnet: "0", // TO BE REPLACED
+    mainnet: "0",
     testnet: "1712114800",
   },
   Boost: {

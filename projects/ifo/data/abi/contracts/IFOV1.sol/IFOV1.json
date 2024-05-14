@@ -189,6 +189,19 @@
   },
   {
     "inputs": [],
+    "name": "NUMBER_POOLS",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "SALE_BASIC",
     "outputs": [
       {
@@ -343,19 +356,6 @@
         "internalType": "contract IERC20",
         "name": "",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "numberPools",
-    "outputs": [
-      {
-        "internalType": "uint8",
-        "name": "",
-        "type": "uint8"
       }
     ],
     "stateMutability": "view",

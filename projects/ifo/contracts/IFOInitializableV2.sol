@@ -4,24 +4,26 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "profile-nft-gamification/contracts/SectaProfile.sol";
-
-import "./interfaces/IIFOV1.sol";
-import "secta-cake-vault/contracts/IFOPool.sol";
-import "secta-cake-vault/contracts/test/CakeToken.sol";
-import "secta-cake-vault/contracts/test/SyrupBar.sol";
-import "secta-cake-vault/contracts/test/MasterChef.sol";
+import "./interfaces/IIFO.sol";
+import "./interfaces/IStaking.sol";
+import "./libraries/MerkleProof.sol";
 
 /**
  * @title IFOInitializableV2
  */
-contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
+contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
+    // Types of sales
+    uint8 public constant SALE_BASIC = 0;
+    uint8 public constant SALE_PRIVATE = 1;
+    uint8 public constant SALE_PUBLIC = 2;
+
     // Number of pools
-    uint8 public constant NUMBER_POOLS = 2;
+    uint8 public constant NUMBER_POOLS = 3;
 
     // The address of the smart chef factory
     address public immutable IFO_FACTORY;
@@ -35,12 +37,6 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
     // The offering token
     IERC20 public offeringToken;
 
-    // SectaProfile
-    SectaProfile public sectaProfile;
-
-    // IFOPool contract
-    IFOPool public ifoPool;
-
     // Whether it is initialized
     bool public isInitialized;
 
@@ -49,9 +45,6 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
 
     // The now when IFO ends
     uint256 public endTimestamp;
-
-    // The campaignId for the IFO
-    uint256 public campaignId;
 
     // The number of points distributed to each person who harvest
     uint256 public numberPoints;
@@ -74,14 +67,22 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
     // It maps user address to accumulative deposit lptoken amount
     mapping(address => uint256) public userAccumulateDeposits;
 
+    // StakingPool contract
+    IStaking public stakingPool;
+
+    uint256 public totalBoost;
+    bytes32 boostMerkleRoot; // boost points merkleRoot
+
     // Struct that contains each pool characteristics
     struct PoolCharacteristics {
         uint256 raisingAmountPool; // amount of tokens raised for the pool (in LP tokens)
         uint256 offeringAmountPool; // amount of tokens offered for the pool (in offeringTokens)
         uint256 limitPerUserInLP; // limit of tokens per user (if 0, it is ignored)
-        bool hasTax; // tax on the overflow (if any, it works with _calculateTaxOverflow)
         uint256 totalAmountPool; // total amount pool deposited (in LP tokens)
         uint256 sumTaxesOverflow; // total taxes collected (starts at 0, increases with each harvest if overflow)
+        bytes32 merkleRoot; // merkle merkleRoot
+        bool hasTax; // tax on the overflow (if any, it works with _calculateTaxOverflow)
+        uint8 saleType; // if the pool is basic or private
     }
 
     // Struct that contains each user information for both pools
@@ -105,9 +106,6 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
     // Event for new start & end timestamps
     event NewStartAndEndTimestamps(uint256 startTimestamp, uint256 endTimestamp);
 
-    // Event with point parameters for IFO
-    event PointParametersSet(uint256 campaignId, uint256 numberPoints, uint256 thresholdPoints);
-
     // Event when parameters are set for one of the pools
     event PoolParametersSet(uint256 offeringAmountPool, uint256 raisingAmountPool, uint8 pid);
 
@@ -130,8 +128,7 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
      * @dev It can only be called once.
      * @param _lpToken: the LP token used
      * @param _offeringToken: the token that is offered for the IFO
-     * @param _sectaProfileAddress: the address of the SectaProfile
-     * @param _ifoPoolAddress: the address of the IFOPool
+     * @param _stakingPoolAddress: the address of the StakingPool
      * @param _startTimestamp: the start timestamp for the IFO
      * @param _endTimestamp: the end timestamp for the IFO
      * @param _maxBufferTime: maximum buffer of time from the current now
@@ -140,12 +137,11 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
     function initialize(
         address _lpToken,
         address _offeringToken,
-        address _sectaProfileAddress,
         uint256 _startTimestamp,
         uint256 _endTimestamp,
         uint256 _maxBufferTime,
         address _adminAddress,
-        address _ifoPoolAddress
+        address _stakingPoolAddress
     ) public {
         require(!isInitialized, "Operations: Already initialized");
         require(msg.sender == IFO_FACTORY, "Operations: Not factory");
@@ -155,8 +151,7 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
 
         lpToken = IERC20(_lpToken);
         offeringToken = IERC20(_offeringToken);
-        sectaProfile = SectaProfile(_sectaProfileAddress);
-        ifoPool = IFOPool(_ifoPoolAddress);
+        stakingPool = IStaking(_stakingPoolAddress);
         startTimestamp = _startTimestamp;
         endTimestamp = _endTimestamp;
         MAX_BUFFER_TIME = _maxBufferTime;
@@ -165,17 +160,32 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
         transferOwnership(_adminAddress);
     }
 
+    function getSaleType(uint8 _pid) external view returns (uint8) {
+        return _poolInformation[_pid].saleType;
+    }
+
     /**
      * @notice It allows users to deposit LP tokens to pool
      * @param _amount: the number of LP token used (18 decimals)
      * @param _pid: pool id
      */
-    function depositPool(uint256 _amount, uint8 _pid) external override nonReentrant notContract {
-        // Checks whether the user has an active profile
-        require(sectaProfile.getUserStatus(msg.sender), "Deposit: Must have an active profile");
-
+    function depositPool(
+        uint256 _amount,
+        uint8 _pid,
+        bytes32[] memory proof
+    ) external override nonReentrant notContract {
         // Checks whether the pool id is valid
         require(_pid < NUMBER_POOLS, "Deposit: Non valid pool id");
+
+        // Checks if the user is in the merkle tree
+        if (_poolInformation[_pid].saleType == SALE_PRIVATE) {
+            require(_poolInformation[_pid].merkleRoot != bytes32(0), "Deposit: Merkle merkleRoot not set");
+            bytes32 leaf = keccak256(abi.encodePacked(keccak256(abi.encode(msg.sender))));
+            bytes32 merkleRoot = _poolInformation[_pid].merkleRoot;
+            require(MerkleProof.verify(proof, merkleRoot, leaf), "Deposit: Invalid proof");
+        } else {
+            require(proof.length == 0, "Deposit: No proof needed for basic sale");
+        }
 
         // Checks that pool was set
         require(
@@ -194,10 +204,6 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
 
         // Verify tokens were deposited properly
         require(offeringToken.balanceOf(address(this)) >= totalTokensOffered, "Deposit: Tokens not deposited properly");
-
-        // getUserCredit from IFOPool
-        uint256 ifoCredit = ifoPool.getUserCredit(msg.sender);
-        require(userAccumulateDeposits[msg.sender].add(_amount) <= ifoCredit, "Not enough IFO credit left");
 
         // Transfers funds to this contract
         lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
@@ -239,9 +245,6 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
 
         // Checks whether the user has already harvested
         require(!_userInfo[msg.sender][_pid].claimedPool, "Harvest: Already done");
-
-        // Claim points if possible
-        _claimPoints(msg.sender);
 
         // Updates the harvest status
         _userInfo[msg.sender][_pid].claimedPool = true;
@@ -320,8 +323,20 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
         uint256 _raisingAmountPool,
         uint256 _limitPerUserInLP,
         bool _hasTax,
-        uint8 _pid
+        uint8 _pid,
+        uint8 _saleType,
+        bytes32 _root
     ) external override onlyOwner {
+        if (_saleType == SALE_BASIC) {
+            require(_root == bytes32(0), "Operations: Basic sale should have empty merkle root");
+        } else if (_saleType == SALE_PRIVATE) {
+            require(_root != bytes32(0), "Operations: Empty merkle root for private sale");
+        } else if (_saleType == SALE_PUBLIC) {
+            require(address(stakingPool) != address(0), "Operations: StakingPool needed for public sale");
+        } else {
+            revert("Operations: Only basic or private/public sale allowed");
+        }
+
         require(now < startTimestamp, "Operations: IFO has started");
         require(_pid < NUMBER_POOLS, "Operations: Pool does not exist");
 
@@ -343,27 +358,6 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @notice It updates point parameters for the IFO.
-     * @param _numberPoints: the number of points for the IFO
-     * @param _campaignId: the campaignId for the IFO
-     * @param _thresholdPoints: the amount of LP required to receive points
-     * @dev This function is only callable by admin.
-     */
-    function updatePointParameters(
-        uint256 _campaignId,
-        uint256 _numberPoints,
-        uint256 _thresholdPoints
-    ) external override onlyOwner {
-        require(now < endTimestamp, "Operations: IFO has ended");
-
-        numberPoints = _numberPoints;
-        campaignId = _campaignId;
-        thresholdPoints = _thresholdPoints;
-
-        emit PointParametersSet(campaignId, numberPoints, thresholdPoints);
-    }
-
-    /**
      * @notice It allows the admin to update start and end timestamps
      * @param _startTimestamp: the new start timestamp
      * @param _endTimestamp: the new end timestamp
@@ -379,6 +373,31 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
         endTimestamp = _endTimestamp;
 
         emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
+    }
+
+    /// danger from owner! remove force* methods before deploy
+    /**
+     * @notice It allows the admin to update start and end timestamps
+     * @param _startTimestamp: the new start timestamp
+     * @param _endTimestamp: the new end timestamp
+     * @dev This function is only callable by admin. This is only for development and will be removed in production.
+     */
+    function forceUpdateStartAndEndTimestamps(uint256 _startTimestamp, uint256 _endTimestamp) external onlyOwner {
+        require(_startTimestamp < _endTimestamp, "Operations: New startTimestamp must be lower than new endTimestamp");
+
+        startTimestamp = _startTimestamp;
+        endTimestamp = _endTimestamp;
+
+        emit NewStartAndEndTimestamps(_startTimestamp, _endTimestamp);
+    }
+
+    function forceUpdateTokens(address _lpToken, address _offeringToken) external onlyOwner {
+        require(IERC20(_lpToken).totalSupply() >= 0);
+        require(IERC20(_offeringToken).totalSupply() >= 0);
+        require(_lpToken != _offeringToken, "Operations: Tokens must be different");
+
+        lpToken = IERC20(_lpToken);
+        offeringToken = IERC20(_offeringToken);
     }
 
     /**
@@ -401,7 +420,8 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
             uint256,
             bool,
             uint256,
-            uint256
+            uint256,
+            bytes32
         )
     {
         return (
@@ -410,7 +430,8 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
             _poolInformation[_pid].limitPerUserInLP,
             _poolInformation[_pid].hasTax,
             _poolInformation[_pid].totalAmountPool,
-            _poolInformation[_pid].sumTaxesOverflow
+            _poolInformation[_pid].sumTaxesOverflow,
+            _poolInformation[_pid].merkleRoot
         );
     }
 
@@ -498,24 +519,6 @@ contract IFOInitializableV2 is IIFOV1, ReentrancyGuard, Ownable {
             amountPools[i] = [userOfferingAmountPool, userRefundingAmountPool, userTaxAmountPool];
         }
         return amountPools;
-    }
-
-    /**
-     * @notice It allows users to claim points
-     * @param _user: user address
-     */
-    function _claimPoints(address _user) internal {
-        if (!_hasClaimedPoints[_user]) {
-            uint256 sumPools;
-            for (uint8 i = 0; i < NUMBER_POOLS; i++) {
-                sumPools = sumPools.add(_userInfo[msg.sender][i].amountPool);
-            }
-            if (sumPools > thresholdPoints) {
-                _hasClaimedPoints[_user] = true;
-                // Increase user points
-                sectaProfile.increaseUserPoints(msg.sender, numberPoints, campaignId);
-            }
-        }
     }
 
     /**
