@@ -25,6 +25,8 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
     // The offering token
     IERC20 public offeringToken;
 
+    uint256 public constant BUFFER_TIME = 1 days;
+
     // Types of sales
     uint8 public constant SALE_BASIC = 0;
     uint8 public constant SALE_PRIVATE = 1;
@@ -235,6 +237,7 @@ contract IFOV2 is IIFO, ReentrancyGuard, Ownable {
      * @dev This function is only callable by admin.
      */
     function finalWithdraw(uint256 _lpAmount, uint256 _offerAmount) external override onlyOwner {
+        require(now > endTimestamp + BUFFER_TIME, "Withdraw: Too early");
         require(_lpAmount <= lpToken.balanceOf(address(this)), "Operations: Not enough LP tokens");
         require(_offerAmount <= offeringToken.balanceOf(address(this)), "Operations: Not enough offering tokens");
 
