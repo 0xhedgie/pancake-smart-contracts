@@ -35,7 +35,7 @@ export default {
   },
   StakingPool: {
     mainnet: "0x0000000000000000000000000000000000000000",
-    testnet: "0xA9b43fa40E97897D3Ada6B3560833c94cd1b7E5e", // SECTA
+    testnet: "0xA9b43fa40E97897D3Ada6B3560833c94cd1b7E5e",
   },
   IFODeployer: {
     mainnet: "0x0000000000000000000000000000000000000000",

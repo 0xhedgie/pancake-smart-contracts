@@ -9,8 +9,8 @@ const main = async () => {
 
   console.log("Verifying on network:", networkName);
 
-  const sectaFactoryAddress = "0x8Ad39bf99765E24012A28bEb0d444DE612903C43"
-  const sectaRouterAddress = "0x4cB96E7f17eA50016dB841171a30899f0497c5dB"
+  const sectaFactoryAddress = config.SectaFactory[networkName]
+  const sectaRouterAddress = config.SectaRouter[networkName]
 
 
   await verifyContract(sectaFactoryAddress)
