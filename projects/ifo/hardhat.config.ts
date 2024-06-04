@@ -9,8 +9,8 @@ import "dotenv/config";
 import "@nomicfoundation/hardhat-verify";
 
 const lineaTestnet: NetworkUserConfig = {
-  url: "https://rpc.goerli.linea.build",
-  chainId: 59140,
+  url: "https://rpc.sepolia.linea.build",
+  chainId: 59141,
   accounts: [process.env.KEY_TESTNET!],
 };
 
@@ -54,10 +54,18 @@ const config: HardhatUserConfig = {
     customChains: [
       {
         network: "testnet",
-        chainId: 59140,
+        chainId: 59141,
         urls: {
-          apiURL: "https://api-testnet.lineascan.build/api",
-          browserURL: "https://goerli.lineascan.build/",
+          apiURL: "https://api-sepolia.lineascan.build/api",
+          browserURL: "https://sepolia.lineascan.build/",
+        },
+      },
+      {
+        network: "linea",
+        chainId: 59144,
+        urls: {
+          apiURL: "https://api.lineascan.build/api",
+          browserURL: "https://lineascan.build/",
         },
       },
     ],

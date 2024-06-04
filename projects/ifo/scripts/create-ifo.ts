@@ -15,7 +15,7 @@ const main = async () => {
     console.log("Compiled contracts");
 
     const IFODeployerV2 = await ethers.getContractFactory("IFODeployerV2");
-    const ifoDeployerV2Address = "0xDF7F8078D5D5aC3dDADEcC122B44fBE70d54B9a8"; // update with corresponding deployment address
+    const ifoDeployerV2Address = "0x59813Ba8D869ebfBDFADAd497587e83E33584ec5"; // update with corresponding deployment address
     const stakingPoolAddress = "0x9E28CA686bFc8e88Cb3415B9e722c4bc79428227"; // update with corresponding deployment address
 
     const ifoDeployerV2 = IFODeployerV2.attach(ifoDeployerV2Address);
@@ -27,6 +27,7 @@ const main = async () => {
       config.EndTimestamp[name],
       config.AdminAddress[name],
       stakingPoolAddress,
+      1000000000,
       { gasLimit: 10000000 }
     );
 

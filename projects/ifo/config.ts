@@ -11,20 +11,15 @@ export default {
   },
   OfferingToken: {
     mainnet: "0x0000000000000000000000000000000000000000",
-    testnet: "0xbe58d17D397d40fAC21Cb037a62dF2fb11A87715", // SECTA
-  },
-  SectaProfile: {
-    // not being used
-    mainnet: "0xdf4dbf6536201370f95e06a0f8a7a70fe40e388a",
-    testnet: "0x4B683C7E13B6d5D7fd1FeA9530F451954c1A7c8A",
+    testnet: "0x92ae51D09765f653B3433Df42d5dba1dde0ab039", // SECTA
   },
   StartTimestamp: {
     mainnet: "0",
-    testnet: "1715721000",
+    testnet: "1717521000",
   },
   EndTimestamp: {
     mainnet: "0",
-    testnet: "1715730000",
+    testnet: "1717530000",
   },
   Boost: {
     mainnet: "10000",

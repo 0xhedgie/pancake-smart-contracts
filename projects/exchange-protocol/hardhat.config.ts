@@ -8,9 +8,9 @@ import "hardhat-contract-sizer";
 import "solidity-coverage";
 import "dotenv/config";
 
-const lineaGoerli: NetworkUserConfig = {
-  url: "https://linea-testnet.rpc.thirdweb.com/",
-  chainId: 59140,
+const lineaSepolia: NetworkUserConfig = {
+  url: "https://rpc.sepolia.linea.build/",
+  chainId: 59141,
   accounts: [process.env.KEY_TESTNET!],
 };
 
@@ -24,18 +24,18 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
-    ...(process.env.KEY_TESTNET && { lineaGoerli }),
+    ...(process.env.KEY_TESTNET && { lineaSepolia }),
     ...(process.env.KEY_MAINNET && { linea }),
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY || '',
     customChains: [
       {
-        network: 'lineaGoerli',
-        chainId: 59140,
+        network: 'lineaSepolia',
+        chainId: 59141,
         urls: {
-          apiURL: 'https://api-testnet.lineascan.build/api',
-          browserURL: 'https://goerli.lineascan.build/',
+          apiURL: 'https://api-sepolia.lineascan.build/api',
+          browserURL: 'https://sepolia.lineascan.build/',
         },
       },
       {

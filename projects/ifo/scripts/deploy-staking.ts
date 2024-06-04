@@ -17,7 +17,8 @@ const main = async () => {
       config.OfferingToken[name],
       config.Boost[name],
       config.Duration[name],
-      config.Penalty[name]
+      config.Penalty[name],
+      { gasLimit: 10000000 }
     );
 
     await staking.deployed();
