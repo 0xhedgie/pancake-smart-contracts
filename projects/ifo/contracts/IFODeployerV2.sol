@@ -37,7 +37,8 @@ contract IFODeployerV2 is Ownable {
         uint256 _startTimestamp,
         uint256 _endTimestamp,
         address _adminAddress,
-        address _stakingPoolAddress
+        address _stakingPoolAddress,
+        uint256 _rateMultiplier
     ) external onlyOwner {
         require(IERC20(_lpToken).totalSupply() >= 0);
         require(IERC20(_offeringToken).totalSupply() >= 0);
@@ -46,7 +47,7 @@ contract IFODeployerV2 is Ownable {
         require(_startTimestamp < _endTimestamp, "Operations: StartTimestamp must be inferior to endTimestamp");
         require(_startTimestamp > now, "Operations: StartTimestamp must be greater than current timestamp");
 
-        bytes32 salt = keccak256(abi.encodePacked(_lpToken, _offeringToken, _startTimestamp));
+        bytes32 salt = keccak256(abi.encodePacked(_lpToken, _offeringToken, _startTimestamp, _rateMultiplier));
 
         IFOInitializableV2 ifo = new IFOInitializableV2{salt: salt}(address(this));
 
@@ -57,7 +58,8 @@ contract IFODeployerV2 is Ownable {
             _endTimestamp,
             MAX_BUFFER_TIME,
             _adminAddress,
-            _stakingPoolAddress
+            _stakingPoolAddress,
+            _rateMultiplier
         );
 
         emit NewIFOContract(address(ifo));

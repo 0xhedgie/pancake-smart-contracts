@@ -169,6 +169,19 @@
   },
   {
     "inputs": [],
+    "name": "BASE_MULTIPLIER",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "IFO_FACTORY",
     "outputs": [
       {
@@ -403,6 +416,11 @@
         "internalType": "address",
         "name": "_stakingPoolAddress",
         "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "_rateMultiplier",
+        "type": "uint256"
       }
     ],
     "name": "initialize",
@@ -470,6 +488,19 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "rateMultiplier",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
       }
     ],
     "stateMutability": "view",

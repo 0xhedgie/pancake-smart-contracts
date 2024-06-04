@@ -67,6 +67,9 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
     // It maps user address to accumulative deposit lptoken amount
     mapping(address => uint256) public userAccumulateDeposits;
 
+    uint256 public rateMultiplier;
+    uint256 public constant BASE_MULTIPLIER = 1_000_000;
+
     // StakingPool contract
     IStaking public stakingPool;
 
@@ -141,7 +144,8 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         uint256 _endTimestamp,
         uint256 _maxBufferTime,
         address _adminAddress,
-        address _stakingPoolAddress
+        address _stakingPoolAddress,
+        uint256 _rateMultiplier
     ) public {
         require(!isInitialized, "Operations: Already initialized");
         require(msg.sender == IFO_FACTORY, "Operations: Not factory");
@@ -155,6 +159,8 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         startTimestamp = _startTimestamp;
         endTimestamp = _endTimestamp;
         MAX_BUFFER_TIME = _maxBufferTime;
+
+        rateMultiplier = _rateMultiplier;
 
         // Transfer ownership to admin
         transferOwnership(_adminAddress);
@@ -177,14 +183,19 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         // Checks whether the pool id is valid
         require(_pid < NUMBER_POOLS, "Deposit: Non valid pool id");
 
+        uint256 userAccumulated = userAccumulateDeposits[msg.sender].add(_amount);
+
         // Checks if the user is in the merkle tree
         if (_poolInformation[_pid].saleType == SALE_PRIVATE) {
             require(_poolInformation[_pid].merkleRoot != bytes32(0), "Deposit: Merkle merkleRoot not set");
             bytes32 leaf = keccak256(abi.encodePacked(keccak256(abi.encode(msg.sender))));
             bytes32 merkleRoot = _poolInformation[_pid].merkleRoot;
             require(MerkleProof.verify(proof, merkleRoot, leaf), "Deposit: Invalid proof");
-        } else {
+        } else if (_poolInformation[_pid].saleType == SALE_BASIC) {
             require(proof.length == 0, "Deposit: No proof needed for basic sale");
+        } else if (_poolInformation[_pid].saleType == SALE_PUBLIC) {
+            uint256 limit = stakingPool.balanceOf(msg.sender).mul(rateMultiplier).div((BASE_MULTIPLIER));
+            require(userAccumulated < limit, "Deposit: Not enough staking credit");
         }
 
         // Checks that pool was set
@@ -205,26 +216,25 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         // Verify tokens were deposited properly
         require(offeringToken.balanceOf(address(this)) >= totalTokensOffered, "Deposit: Tokens not deposited properly");
 
-        // Transfers funds to this contract
-        lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
+        // Updates Accumulative deposit lptokens
+        userAccumulateDeposits[msg.sender] = userAccumulated;
 
-        // Update the user status
-        _userInfo[msg.sender][_pid].amountPool = _userInfo[msg.sender][_pid].amountPool.add(_amount);
+        uint256 userPooled = _userInfo[msg.sender][_pid].amountPool.add(_amount);
 
         // Check if the pool has a limit per user
         if (_poolInformation[_pid].limitPerUserInLP > 0) {
             // Checks whether the limit has been reached
-            require(
-                _userInfo[msg.sender][_pid].amountPool <= _poolInformation[_pid].limitPerUserInLP,
-                "Deposit: New amount above user limit"
-            );
+            require(userPooled <= _poolInformation[_pid].limitPerUserInLP, "Deposit: New amount above user limit");
         }
+
+        // Update the user status
+        _userInfo[msg.sender][_pid].amountPool = userPooled;
 
         // Updates the totalAmount for pool
         _poolInformation[_pid].totalAmountPool = _poolInformation[_pid].totalAmountPool.add(_amount);
 
-        // Updates Accumulative deposit lptokens
-        userAccumulateDeposits[msg.sender] = userAccumulateDeposits[msg.sender].add(_amount);
+        // Transfers funds to this contract
+        lpToken.safeTransferFrom(address(msg.sender), address(this), _amount);
 
         emit Deposit(msg.sender, _amount, _pid);
     }
