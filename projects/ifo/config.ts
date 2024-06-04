@@ -11,7 +11,7 @@ export default {
   },
   OfferingToken: {
     mainnet: "0x0000000000000000000000000000000000000000",
-    testnet: "0x92ae51D09765f653B3433Df42d5dba1dde0ab039", // SECTA
+    testnet: "0xe54c8b4F6bC9F30A805a16B47635b11061a1a454", // SECTA
   },
   StartTimestamp: {
     mainnet: "0",
@@ -32,5 +32,13 @@ export default {
   Penalty: {
     mainnet: 500,
     testnet: 500,
+  },
+  StakingPool: {
+    mainnet: "0x0000000000000000000000000000000000000000",
+    testnet: "0xA9b43fa40E97897D3Ada6B3560833c94cd1b7E5e", // SECTA
+  },
+  IFODeployer: {
+    mainnet: "0x0000000000000000000000000000000000000000",
+    testnet: "0xc7DD5b639561b3c66633DAA3A42a640fD5cA104b",
   },
 };

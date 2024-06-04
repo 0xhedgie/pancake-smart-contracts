@@ -10,7 +10,7 @@ const main = async () => {
   // eslint-disable-next-line no-console
   console.log("Verifying on network:", name);
 
-  const ifoDeployerV2 = "0xDF7F8078D5D5aC3dDADEcC122B44fBE70d54B9a8"; // update with corresponding address
+  const ifoDeployerV2 = config.IFODeployer[name];
 
   await verifyContract(ifoDeployerV2);
   await sleep(10000);

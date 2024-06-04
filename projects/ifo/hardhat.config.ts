@@ -9,7 +9,7 @@ import "dotenv/config";
 import "@nomicfoundation/hardhat-verify";
 
 const lineaTestnet: NetworkUserConfig = {
-  url: "https://rpc.sepolia.linea.build",
+  url: "https://linea-sepolia.blockpi.network/v1/rpc/public",
   chainId: 59141,
   accounts: [process.env.KEY_TESTNET!],
 };
