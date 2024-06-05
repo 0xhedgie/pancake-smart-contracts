@@ -29,6 +29,8 @@ const main = async () => {
       { gasLimit: 10000000 }
     );
 
+    console.log("Created an IFO v2 pool");
+
     /* const ifoAddress = ifoTx.receipt.logs[2].args[0];
     console.log("IFODeployerV2 - created an IFO: ", ifoAddress);
 

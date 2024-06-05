@@ -11,7 +11,7 @@ const main = async () => {
   console.log("Compiled contracts!");
 
   const IFOV1 = await ethers.getContractFactory("IFOV1");
-  const ifoV1Address = "0xf1c36092a19cfABaAc70B58DD6807C85d1F6C85A"; // update with corresponding deployment address
+  const ifoV1Address = config.IFOV1[name];
 
   const ifoV1 = IFOV1.attach(ifoV1Address);
 
@@ -59,7 +59,7 @@ const main = async () => {
     false, // tax
     1,
     1,
-    "0x4551caae2a6eac153a77a43e19c04344a830bde8dfd0f139a4c585fe0c6e619f",
+    config.ROOT,
     { gasLimit: 1000000 }
   );
 };

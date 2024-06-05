@@ -6,8 +6,8 @@ export default {
   LPToken: {
     mainnet: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
 
-    // weth 0x2C1b868d6596a18e32E61B901E4060C872647b6C
-    testnet: "0xf56dc6695cF1f5c364eDEbC7Dc7077ac9B586068", // USDC
+    // weth 0x10253594A832f967994b44f33411940533302ACb
+    testnet: "0x7Fb44Fe0D3C595B7C8Ba5690bded52C72E6fE410", // USDT, self-made
   },
   OfferingToken: {
     mainnet: "0x0000000000000000000000000000000000000000",
@@ -15,11 +15,11 @@ export default {
   },
   StartTimestamp: {
     mainnet: "0",
-    testnet: "1717521000",
+    testnet: "1717621000",
   },
   EndTimestamp: {
     mainnet: "0",
-    testnet: "1717530000",
+    testnet: "1717630000",
   },
   Boost: {
     mainnet: "10000",
@@ -41,4 +41,9 @@ export default {
     mainnet: "0x0000000000000000000000000000000000000000",
     testnet: "0xc7DD5b639561b3c66633DAA3A42a640fD5cA104b",
   },
+  IFOV1: {
+    mainnet: "0x0000000000000000000000000000000000000000",
+    testnet: "0x48bc82e243d6598afA795c6974b6502f33372009",
+  },
+  ROOT: "0x4551caae2a6eac153a77a43e19c04344a830bde8dfd0f139a4c585fe0c6e619f",
 };

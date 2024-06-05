@@ -15,13 +15,13 @@ const main = async () => {
     await run("compile");
     console.log("Compiled contracts");
 
-    const ifoV2 = await ethers.getContractFactory("IFOInitializableV2");
-    const ifo = await ifoV2.deploy("0xDF7F8078D5D5aC3dDADEcC122B44fBE70d54B9a8");
+    const IFOV2 = await ethers.getContractFactory("IFOInitializableV2");
+    const ifov2 = await IFOV2.deploy(config.IFODeployer[name]);
 
-    await ifo.deployed();
-    console.log("ifoV2 deployed to:", ifo.address);
+    await ifov2.deployed();
+    console.log("IFOV2 deployed to:", ifov2.address);
 
-    await verifyContract(ifo.address, ["0xDF7F8078D5D5aC3dDADEcC122B44fBE70d54B9a8"]);
+    await verifyContract(ifov2.address, [config.IFODeployer[name]]);
     await sleep(1000);
   }
 };

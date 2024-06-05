@@ -47,7 +47,9 @@ contract IFODeployerV2 is Ownable {
         require(_startTimestamp < _endTimestamp, "Operations: StartTimestamp must be inferior to endTimestamp");
         require(_startTimestamp > now, "Operations: StartTimestamp must be greater than current timestamp");
 
-        bytes32 salt = keccak256(abi.encodePacked(_lpToken, _offeringToken, _startTimestamp, _rateMultiplier));
+        bytes32 salt = keccak256(
+            abi.encodePacked(_lpToken, _offeringToken, _startTimestamp, _stakingPoolAddress, _rateMultiplier)
+        );
 
         IFOInitializableV2 ifo = new IFOInitializableV2{salt: salt}(address(this));
 

@@ -90,7 +90,7 @@ const main = async () => {
       false, // tax
       1, // id
       1,
-      "0x4551caae2a6eac153a77a43e19c04344a830bde8dfd0f139a4c585fe0c6e619f",
+      config.ROOT,
       { gasLimit: 1000000 }
     );
   }

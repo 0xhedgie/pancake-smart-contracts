@@ -10,7 +10,7 @@ const main = async () => {
   // eslint-disable-next-line no-console
   console.log("Verifying on network:", name);
 
-  const ifoV1Address = "0xa77f29e4fCb594D5986FE5ab5C1E1c00D72Ede39"; // update with corresponding address
+  const ifoV1Address = config.IFOV1[name];
 
   await verifyContract(ifoV1Address, [
     config.LPToken[name],
