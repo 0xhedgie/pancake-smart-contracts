@@ -1,7 +1,7 @@
 export default {
   AdminAddress: {
     mainnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // li
-    testnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // jac
+    testnet: "0x98903fF7ee67b1615C00eBC80c39626dA508150D", // jac
   },
   LPToken: {
     mainnet: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
@@ -43,7 +43,7 @@ export default {
   },
   IFOV1: {
     mainnet: "0x0000000000000000000000000000000000000000",
-    testnet: "0x48bc82e243d6598afA795c6974b6502f33372009",
+    testnet: "0xEA658F4e0B575c5DC9420dE44baB842374FDa258",
   },
   ROOT: "0x4551caae2a6eac153a77a43e19c04344a830bde8dfd0f139a4c585fe0c6e619f",
 };

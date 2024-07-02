@@ -39,15 +39,6 @@ const main = async () => {
     await ifoV1.deployed();
     console.log("IFOV1 deployed to:", ifoV1.address);
 
-    await verifyContract(ifoV1.address, [
-      config.LPToken[name],
-      config.OfferingToken[name],
-      config.StartTimestamp[name],
-      config.EndTimestamp[name],
-      config.AdminAddress[name],
-    ]);
-    await sleep(10000);
-
     const MockERC20 = await ethers.getContractFactory("MockERC20");
     const offeringToken = MockERC20.attach(config.OfferingToken[name]);
 
