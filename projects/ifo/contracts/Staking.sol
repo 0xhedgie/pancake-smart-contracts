@@ -173,6 +173,14 @@ contract Staking is Ownable, IStaking {
         return _calcPoints(checkpoint.lock, checkpoint.fromTimestamp);
     }
 
+    function _getPointsFromCheckpointWith(Checkpoint memory checkpoint, uint256 timestamp)
+        internal
+        view
+        returns (uint256)
+    {
+        return _calcPoints(checkpoint.lock, timestamp);
+    }
+
     function _getPointsAt(address account, uint256 blockNumber) internal view returns (uint256) {
         require(blockNumber < now, "block no in the future");
 
@@ -217,7 +225,7 @@ contract Staking is Ownable, IStaking {
 
         // First check most recent balance
         if (checkpoints[account][nCheckpoints - 1].fromTimestamp <= time) {
-            return _getPointsFromCheckpoint(checkpoints[account][nCheckpoints - 1]);
+            return _getPointsFromCheckpointWith(checkpoints[account][nCheckpoints - 1], time);
         }
 
         // Next check implicit zero balance
@@ -231,14 +239,14 @@ contract Staking is Ownable, IStaking {
             uint32 center = upper - (upper - lower) / 2; // ceil, avoiding overflow
             Checkpoint memory cp = checkpoints[account][center];
             if (cp.fromTimestamp == time) {
-                return _getPointsFromCheckpoint(cp);
+                return _getPointsFromCheckpointWith(cp, time);
             } else if (cp.fromTimestamp < time) {
                 lower = center;
             } else {
                 upper = center - 1;
             }
         }
-        return _getPointsFromCheckpoint(checkpoints[account][lower]);
+        return _getPointsFromCheckpointWith(checkpoints[account][lower], time);
     }
 
     function _writeCheckpoint(

@@ -61,7 +61,7 @@ const config: HardhatUserConfig = {
         },
       },
       {
-        network: "linea",
+        network: "mainnet",
         chainId: 59144,
         urls: {
           apiURL: "https://api.lineascan.build/api",

@@ -48,6 +48,25 @@
         "type": "uint8"
       }
     ],
+    "name": "getSaleType",
+    "outputs": [
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "_pid",
+        "type": "uint8"
+      }
+    ],
     "name": "harvestPool",
     "outputs": [],
     "stateMutability": "nonpayable",
@@ -140,6 +159,11 @@
         "internalType": "bytes32",
         "name": "",
         "type": "bytes32"
+      },
+      {
+        "internalType": "uint8",
+        "name": "",
+        "type": "uint8"
       }
     ],
     "stateMutability": "view",

@@ -10,7 +10,7 @@ const main = async () => {
   // eslint-disable-next-line no-console
   console.log("Verifying on network:", name);
 
-  const pairAddress = "0xbd26a6b703eDAD9AbE251de31b24A97Bd3C930dD";
+  const pairAddress = "0x1Ceb5573F53538a65dC47FAe77dEDD984f717892";
 
   await verifyContract(pairAddress);
   await sleep(10000);

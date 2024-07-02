@@ -50,6 +50,12 @@ interface IIFO {
     ) external;
 
     /**
+     * @notice It returns the pool sale type, same as the one in viewPoolInformation
+     * @param _pid: poolId
+     */
+    function getSaleType(uint8 _pid) external view returns (uint8);
+
+    /**
      * @notice It returns the pool information
      * @param _pid: poolId
      */
@@ -63,7 +69,8 @@ interface IIFO {
             bool,
             uint256,
             uint256,
-            bytes32
+            bytes32,
+            uint8
         );
 
     /**

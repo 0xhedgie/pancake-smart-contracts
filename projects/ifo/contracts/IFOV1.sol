@@ -116,7 +116,7 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
         transferOwnership(_adminAddress);
     }
 
-    function getSaleType(uint8 _pid) external view returns (uint8) {
+    function getSaleType(uint8 _pid) external view override returns (uint8) {
         return _poolInformation[_pid].saleType;
     }
 
@@ -382,17 +382,20 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
             bool,
             uint256,
             uint256,
-            bytes32
+            bytes32,
+            uint8
         )
     {
+        PoolCharacteristics memory pi = _poolInformation[_pid];
         return (
-            _poolInformation[_pid].raisingAmountPool,
-            _poolInformation[_pid].offeringAmountPool,
-            _poolInformation[_pid].limitPerUserInLP,
-            _poolInformation[_pid].hasTax,
-            _poolInformation[_pid].totalAmountPool,
-            _poolInformation[_pid].sumTaxesOverflow,
-            _poolInformation[_pid].merkleRoot
+            pi.raisingAmountPool,
+            pi.offeringAmountPool,
+            pi.limitPerUserInLP,
+            pi.hasTax,
+            pi.totalAmountPool,
+            pi.sumTaxesOverflow,
+            pi.merkleRoot,
+            pi.saleType
         );
     }
 

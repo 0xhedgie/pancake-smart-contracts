@@ -46,20 +46,11 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
     // The now when IFO ends
     uint256 public endTimestamp;
 
-    // The number of points distributed to each person who harvest
-    uint256 public numberPoints;
-
-    // The threshold for points (in LP tokens)
-    uint256 public thresholdPoints;
-
     // Total tokens distributed across the pools
     uint256 public totalTokensOffered;
 
     // Array of PoolCharacteristics of size NUMBER_POOLS
     PoolCharacteristics[NUMBER_POOLS] private _poolInformation;
-
-    // Checks if user has claimed points
-    mapping(address => bool) private _hasClaimedPoints;
 
     // It maps the address to pool id to UserInfo
     mapping(address => mapping(uint8 => UserInfo)) private _userInfo;
@@ -72,9 +63,6 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
 
     // StakingPool contract
     IStaking public stakingPool;
-
-    uint256 public totalBoost;
-    bytes32 boostMerkleRoot; // boost points merkleRoot
 
     // Struct that contains each pool characteristics
     struct PoolCharacteristics {
@@ -166,7 +154,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         transferOwnership(_adminAddress);
     }
 
-    function getSaleType(uint8 _pid) external view returns (uint8) {
+    function getSaleType(uint8 _pid) external view override returns (uint8) {
         return _poolInformation[_pid].saleType;
     }
 
@@ -194,7 +182,9 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         } else if (_poolInformation[_pid].saleType == SALE_BASIC) {
             require(proof.length == 0, "Deposit: No proof needed for basic sale");
         } else if (_poolInformation[_pid].saleType == SALE_PUBLIC) {
-            uint256 limit = stakingPool.balanceOf(msg.sender).mul(rateMultiplier).div((BASE_MULTIPLIER));
+            uint256 limit = stakingPool.balanceOfAtTime(msg.sender, startTimestamp).mul(rateMultiplier).div(
+                (BASE_MULTIPLIER)
+            );
             require(userAccumulated < limit, "Deposit: Not enough staking credit");
         }
 
@@ -432,17 +422,20 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
             bool,
             uint256,
             uint256,
-            bytes32
+            bytes32,
+            uint8
         )
     {
+        PoolCharacteristics memory pi = _poolInformation[_pid];
         return (
-            _poolInformation[_pid].raisingAmountPool,
-            _poolInformation[_pid].offeringAmountPool,
-            _poolInformation[_pid].limitPerUserInLP,
-            _poolInformation[_pid].hasTax,
-            _poolInformation[_pid].totalAmountPool,
-            _poolInformation[_pid].sumTaxesOverflow,
-            _poolInformation[_pid].merkleRoot
+            pi.raisingAmountPool,
+            pi.offeringAmountPool,
+            pi.limitPerUserInLP,
+            pi.hasTax,
+            pi.totalAmountPool,
+            pi.sumTaxesOverflow,
+            pi.merkleRoot,
+            pi.saleType
         );
     }
 
