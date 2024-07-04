@@ -401,6 +401,10 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         offeringToken = IERC20(_offeringToken);
     }
 
+    function forceUpdateRateMultiplier(uint256 _rateMultiplier) external onlyOwner {
+        rateMultiplier = _rateMultiplier;
+    }
+
     /**
      * @notice It returns the pool information
      * @param _pid: poolId
