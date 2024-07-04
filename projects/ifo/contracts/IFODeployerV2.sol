@@ -13,7 +13,7 @@ import "./IFOInitializableV2.sol";
 contract IFODeployerV2 is Ownable {
     using SafeERC20 for IERC20;
 
-    uint256 public constant MAX_BUFFER_TIME = 31 days; // previously, 200,000 blocks (6-7 days on BSC)
+    uint256 public constant MAX_DURATION = 31 days; // previously, 200,000 blocks (6-7 days on BSC)
 
     event AdminTokenRecovery(address indexed tokenRecovered, uint256 amount);
     event NewIFOContract(address indexed ifoAddress);
@@ -43,7 +43,7 @@ contract IFODeployerV2 is Ownable {
         require(IERC20(_lpToken).totalSupply() >= 0);
         require(IERC20(_offeringToken).totalSupply() >= 0);
         require(_lpToken != _offeringToken, "Operations: Tokens must be be different");
-        require(_endTimestamp < (now + MAX_BUFFER_TIME), "Operations: EndTimestamp too far");
+        require(_endTimestamp < (_startTimestamp + MAX_DURATION), "Operations: Duration too long");
         require(_startTimestamp < _endTimestamp, "Operations: StartTimestamp must be inferior to endTimestamp");
         require(_startTimestamp > now, "Operations: StartTimestamp must be greater than current timestamp");
 
@@ -58,7 +58,7 @@ contract IFODeployerV2 is Ownable {
             _offeringToken,
             _startTimestamp,
             _endTimestamp,
-            MAX_BUFFER_TIME,
+            MAX_DURATION,
             _adminAddress,
             _stakingPoolAddress,
             _rateMultiplier

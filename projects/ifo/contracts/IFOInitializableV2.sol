@@ -29,7 +29,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
     address public immutable IFO_FACTORY;
 
     // Max time (for sanity checks)
-    uint256 public MAX_BUFFER_TIME;
+    uint256 public MAX_DURATION;
 
     // The LP token used
     IERC20 public lpToken;
@@ -122,7 +122,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
      * @param _stakingPoolAddress: the address of the StakingPool
      * @param _startTimestamp: the start timestamp for the IFO
      * @param _endTimestamp: the end timestamp for the IFO
-     * @param _maxBufferTime: maximum buffer of time from the current now
+     * @param _maxDuration: maximum duration of the IFO
      * @param _adminAddress: the admin address for handling tokens
      */
     function initialize(
@@ -130,7 +130,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         address _offeringToken,
         uint256 _startTimestamp,
         uint256 _endTimestamp,
-        uint256 _maxBufferTime,
+        uint256 _maxDuration,
         address _adminAddress,
         address _stakingPoolAddress,
         uint256 _rateMultiplier
@@ -146,7 +146,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         stakingPool = IStaking(_stakingPoolAddress);
         startTimestamp = _startTimestamp;
         endTimestamp = _endTimestamp;
-        MAX_BUFFER_TIME = _maxBufferTime;
+        MAX_DURATION = _maxDuration;
 
         rateMultiplier = _rateMultiplier;
 
@@ -280,6 +280,8 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
      * @dev This function is only callable by admin.
      */
     function finalWithdraw(uint256 _lpAmount, uint256 _offerAmount) external override onlyOwner {
+        require(now > endTimestamp, "Withdraw: Too early");
+
         require(_lpAmount <= lpToken.balanceOf(address(this)), "Operations: Not enough LP tokens");
         require(_offerAmount <= offeringToken.balanceOf(address(this)), "Operations: Not enough offering tokens");
 
@@ -365,7 +367,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
      * @dev This function is only callable by admin.
      */
     function updateStartAndEndTimestamps(uint256 _startTimestamp, uint256 _endTimestamp) external onlyOwner {
-        require(_endTimestamp < (now + MAX_BUFFER_TIME), "Operations: EndTimestamp too far");
+        require(_endTimestamp < (_startTimestamp + MAX_DURATION), "Operations: Duration too long");
         require(now < startTimestamp, "Operations: IFO has started");
         require(_startTimestamp < _endTimestamp, "Operations: New startTimestamp must be lower than new endTimestamp");
         require(now < _startTimestamp, "Operations: New startTimestamp must be higher than current timestamp");

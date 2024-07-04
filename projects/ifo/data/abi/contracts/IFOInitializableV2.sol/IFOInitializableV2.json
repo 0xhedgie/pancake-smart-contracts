@@ -195,7 +195,7 @@
   },
   {
     "inputs": [],
-    "name": "MAX_BUFFER_TIME",
+    "name": "MAX_DURATION",
     "outputs": [
       {
         "internalType": "uint256",
@@ -417,7 +417,7 @@
       },
       {
         "internalType": "uint256",
-        "name": "_maxBufferTime",
+        "name": "_maxDuration",
         "type": "uint256"
       },
       {

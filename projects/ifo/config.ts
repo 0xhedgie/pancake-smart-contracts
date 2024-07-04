@@ -1,7 +1,7 @@
 export default {
   AdminAddress: {
     mainnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // li
-    testnet: "0x98903fF7ee67b1615C00eBC80c39626dA508150D", // jac
+    testnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // jac
   },
   LPToken: {
     mainnet: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
@@ -15,11 +15,11 @@ export default {
   },
   StartTimestamp: {
     mainnet: "0",
-    testnet: "1719900000",
+    testnet: "1729900000",
   },
   EndTimestamp: {
     mainnet: "0",
-    testnet: "1720000000",
+    testnet: "1730000000",
   },
   Boost: {
     mainnet: "10000",
@@ -35,11 +35,11 @@ export default {
   },
   StakingPool: {
     mainnet: "0x0000000000000000000000000000000000000000",
-    testnet: "0x46FB35d8a26412c64Fb972D838fCBd4ec48EE7b1",
+    testnet: "0x4C35fA1249a72190fc2e08fd778d0E15E8bcb586",
   },
   IFODeployer: {
     mainnet: "0x0000000000000000000000000000000000000000",
-    testnet: "0x81b607CF2f78F891C6FF358f56385F8EdDC88440",
+    testnet: "0x0cEdFFb539aD0A933b50F2FA71b83eE6A164F847",
   },
   IFOV1: {
     mainnet: "0x0000000000000000000000000000000000000000",

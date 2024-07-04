@@ -57,7 +57,7 @@
   },
   {
     "inputs": [],
-    "name": "MAX_BUFFER_TIME",
+    "name": "MAX_DURATION",
     "outputs": [
       {
         "internalType": "uint256",
