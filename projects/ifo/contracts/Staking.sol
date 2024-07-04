@@ -25,7 +25,9 @@ contract Staking is Ownable, IStaking {
 
     uint256 public constant BASE_POINTS = 10000;
 
-    uint256 public penalty;
+    uint256 public protocolFee;
+
+    uint256 public penaltyPoints;
 
     IERC20 public token;
 
@@ -63,11 +65,11 @@ contract Staking is Ownable, IStaking {
         BOOST = _boost;
         MAX_DURATION = _duration;
 
-        penalty = _penalty;
+        penaltyPoints = _penalty;
     }
 
     function updatePenalty(uint256 _penalty) external onlyOwner {
-        penalty = _penalty;
+        penaltyPoints = _penalty;
     }
 
     function createLock(uint256 _amount) external override {
@@ -109,10 +111,14 @@ contract Staking is Ownable, IStaking {
         Lock memory userLock = locks[msg.sender];
 
         require(userLock.startTimestamp > 0, "Lock not found");
-        require(userLock.amount > _amount, "Incorrect amount");
+        require(userLock.amount >= _amount, "Incorrect amount");
 
         userLock.amount -= _amount;
-        _amount -= (penalty * _amount) / BASE_POINTS;
+
+        uint256 fee = (penaltyPoints * _amount) / BASE_POINTS;
+        _amount -= fee;
+
+        protocolFee += fee;
 
         if (_amount > 0) token.transfer(msg.sender, _amount);
 
@@ -128,13 +134,20 @@ contract Staking is Ownable, IStaking {
 
         require(userLock.startTimestamp > 0, "Lock not found");
 
-        amount -= (penalty * amount) / BASE_POINTS;
+        amount -= (penaltyPoints * amount) / BASE_POINTS;
 
         if (amount > 0) token.transfer(msg.sender, amount);
 
         delete locks[msg.sender];
 
         _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], Lock(0, 0));
+    }
+
+    function withdrawFee(address _to) external onlyOwner {
+        if (protocolFee > 0) {
+            protocolFee = 0;
+            token.transfer(_to, protocolFee);
+        }
     }
 
     //// View ////

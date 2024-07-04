@@ -312,7 +312,20 @@
   },
   {
     "inputs": [],
-    "name": "penalty",
+    "name": "penaltyPoints",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "protocolFee",
     "outputs": [
       {
         "internalType": "uint256",
@@ -385,6 +398,19 @@
   {
     "inputs": [],
     "name": "withdrawAll",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_to",
+        "type": "address"
+      }
+    ],
+    "name": "withdrawFee",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
