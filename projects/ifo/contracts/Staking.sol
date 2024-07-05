@@ -122,7 +122,8 @@ contract Staking is Ownable, IStaking {
 
         if (_amount > 0) token.transfer(msg.sender, _amount);
 
-        locks[msg.sender].amount = userLock.amount;
+        if (userLock.amount == 0) delete locks[msg.sender];
+        else locks[msg.sender].amount = userLock.amount;
 
         _writeCheckpoint(msg.sender, numCheckpoints[msg.sender], userLock);
     }
@@ -145,8 +146,9 @@ contract Staking is Ownable, IStaking {
 
     function withdrawFee(address _to) external onlyOwner {
         if (protocolFee > 0) {
+            uint256 fee = protocolFee;
             protocolFee = 0;
-            token.transfer(_to, protocolFee);
+            token.transfer(_to, fee);
         }
     }
 
@@ -175,6 +177,8 @@ contract Staking is Ownable, IStaking {
     }
 
     function _calcPoints(Lock memory lock, uint256 timestamp) internal view returns (uint256 points) {
+        if (lock.amount == 0 || lock.startTimestamp == 0) return 0;
+
         uint256 elapsed = timestamp.sub(lock.startTimestamp);
 
         uint256 min = elapsed > MAX_DURATION ? MAX_DURATION : elapsed;

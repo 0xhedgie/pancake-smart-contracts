@@ -35,7 +35,7 @@ export default {
   },
   StakingPool: {
     mainnet: "0x0000000000000000000000000000000000000000",
-    testnet: "0x4C35fA1249a72190fc2e08fd778d0E15E8bcb586",
+    testnet: "0x3AeA4419a99FF2e7C3AD796f30Ee5932e41CB7bF",
   },
   IFODeployer: {
     mainnet: "0x0000000000000000000000000000000000000000",
