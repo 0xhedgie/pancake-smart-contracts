@@ -447,9 +447,9 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
         uint256[] memory amountPools = new uint256[](_pids.length);
         bool[] memory statusPools = new bool[](_pids.length);
 
-        for (uint8 i = 0; i < NUMBER_POOLS; i++) {
-            amountPools[i] = _userInfo[_user][i].amountPool;
-            statusPools[i] = _userInfo[_user][i].claimedPool;
+        for (uint8 i = 0; i < _pids.length; i++) {
+            amountPools[i] = _userInfo[_user][_pids[i]].amountPool;
+            statusPools[i] = _userInfo[_user][_pids[i]].claimedPool;
         }
         return (amountPools, statusPools);
     }

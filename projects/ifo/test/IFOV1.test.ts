@@ -861,12 +861,24 @@ contract("IFO V1", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
   });
 
   describe("IFO - ADMIN FUNCTIONS", async () => {
-    it("Admin can withdraw funds", async () => {
+    it("Admin cannot withdraw funds till a day after end", async () => {
       let amountToWithdraw = await mockIFO.viewPoolInformation(1);
       amountToWithdraw = new BN(amountToWithdraw[5]);
 
       // Withdraw LP raised + TAX OVERFLOW
       amountToWithdraw = amountToWithdraw.add(new BN(raisingAmountTotal.toString()));
+
+      await expectRevert(mockIFO.finalWithdraw(amountToWithdraw, "0", { from: alice }), "Withdraw: Too early");
+    });
+
+    it("Admin can withdraw funds after a day", async () => {
+      let amountToWithdraw = await mockIFO.viewPoolInformation(1);
+      amountToWithdraw = new BN(amountToWithdraw[5]);
+
+      // Withdraw LP raised + TAX OVERFLOW
+      amountToWithdraw = amountToWithdraw.add(new BN(raisingAmountTotal.toString()));
+
+      await time.increaseTo(+_endTimestamp + 86400);
 
       result = await mockIFO.finalWithdraw(amountToWithdraw, "0", { from: alice });
 
@@ -1198,6 +1210,8 @@ contract("IFO V1", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     it("Admin withdraw funds", async () => {
       const balanceOCToWithdraw = parseEther("455.144531702518215800");
 
+      await time.increaseTo(+_endTimestamp + 86400);
+
       // Slightly more than OC balanceOf mockIFO
       await expectRevert(
         mockIFO.finalWithdraw(parseEther("0"), parseEther("455.144531702518215801"), { from: alice }),
@@ -1427,6 +1441,8 @@ contract("IFO V1", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         value: String("1"),
       });
 
+      await time.increase(86400);
+
       // Admin withdraws 12 LP tokens
       result = await mockIFO.finalWithdraw(parseEther("12"), "0", { from: alice });
       expectEvent(result, "AdminWithdraw", { amountLP: String(parseEther("12")), amountOfferingToken: "0" });
@@ -1638,6 +1654,8 @@ contract("IFO V1", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
         value: String("1"),
       });
 
+      await time.increase(86400);
+
       // Admin withdraws 12 LP tokens
       result = await mockIFO.finalWithdraw(parseEther("12"), "0", { from: alice });
       expectEvent(result, "AdminWithdraw", { amountLP: String(parseEther("12")), amountOfferingToken: "0" });
@@ -1645,6 +1663,30 @@ contract("IFO V1", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
       // Verify rounding issues
       assert.equal(String(await mockLP.balanceOf(mockIFO.address)), String(parseEther("11.975999999988024000")));
       assert.equal(String(await mockOC.balanceOf(mockIFO.address)), String(parseUnits("0.000001", "6")));
+    });
+  });
+
+  describe("View", async () => {
+    it("viewUserInfo is correct", async () => {
+      const result = await mockIFO.viewUserInfo(alice, [0, 1]);
+
+      /*
+Result {
+  '0': [
+    BN { negative: 0, words: [Array], length: 1, red: null },
+    BN { negative: 0, words: [Array], length: 1, red: null }
+  ],
+  '1': [ false, false ]
+}*/
+      assert.equal(result[0][0], 0);
+      assert.equal(result[1][0], false);
+      assert.isTrue(true);
+    });
+
+    it("viewUserAllocationPools is correct", async () => {
+      const allocations = await mockIFO.viewUserAllocationPools(alice, [0, 1]);
+
+      assert.equal(allocations[0], 0);
     });
   });
 });

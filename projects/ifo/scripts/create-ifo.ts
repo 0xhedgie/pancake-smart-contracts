@@ -25,7 +25,7 @@ const main = async () => {
       config.EndTimestamp[name],
       config.AdminAddress[name],
       config.StakingPool[name],
-      1000000000,
+      1000000,
       { gasLimit: 10000000 }
     );
 

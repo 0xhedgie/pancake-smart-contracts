@@ -44,7 +44,7 @@ contract IFODeployerV2 is Ownable {
         require(IERC20(_offeringToken).totalSupply() >= 0);
         require(_lpToken != _offeringToken, "Operations: Tokens must be be different");
         require(_endTimestamp < (_startTimestamp + MAX_DURATION), "Operations: Duration too long");
-        require(_startTimestamp < _endTimestamp, "Operations: StartTimestamp must be inferior to endTimestamp");
+        require(_startTimestamp < _endTimestamp, "Operations: StartTimestamp must be less than endTimestamp");
         require(_startTimestamp > now, "Operations: StartTimestamp must be greater than current timestamp");
 
         bytes32 salt = keccak256(
