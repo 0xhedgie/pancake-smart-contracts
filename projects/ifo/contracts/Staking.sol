@@ -31,6 +31,8 @@ contract Staking is Ownable, IStaking {
 
     IERC20 public token;
 
+    uint8 public override tokenDecimals;
+
     /// @notice A checkpoint for marking locks from a given block
     struct Checkpoint {
         uint32 fromBlock;
@@ -61,6 +63,7 @@ contract Staking is Ownable, IStaking {
         require(_penalty < BASE_POINTS);
 
         token = IERC20(_token);
+        tokenDecimals = IERC20Extended(_token).decimals();
 
         BOOST = _boost;
         MAX_DURATION = _duration;

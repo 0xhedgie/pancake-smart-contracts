@@ -7,6 +7,10 @@ struct Lock {
     uint256 startTimestamp;
 }
 
+interface IERC20Extended {
+    function decimals() external view returns (uint8);
+}
+
 /** @title IStaking.
  * @notice It is an interface for Staking.sol
  */
@@ -28,4 +32,6 @@ interface IStaking {
     function balanceOfAt(address _owner, uint256 _block) external view returns (uint256);
 
     function balanceOfAtTime(address _owner, uint256 _time) external view returns (uint256);
+
+    function tokenDecimals() external view returns (uint8);
 }

@@ -3,3 +3,6 @@ projects/**/coverage/
 
 # Project
 projects/exchange-protocol/
+
+projects/cake-vault/
+projects/profile-nft-gamification/

@@ -33,6 +33,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
 
     // The LP token used
     IERC20 public lpToken;
+    uint8 public lpTokenDecimals;
 
     // The offering token
     IERC20 public offeringToken;
@@ -142,6 +143,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         isInitialized = true;
 
         lpToken = IERC20(_lpToken);
+        lpTokenDecimals = IERC20Extended(_lpToken).decimals();
         offeringToken = IERC20(_offeringToken);
         stakingPool = IStaking(_stakingPoolAddress);
         startTimestamp = _startTimestamp;
@@ -182,9 +184,12 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         } else if (_poolInformation[_pid].saleType == SALE_BASIC) {
             require(proof.length == 0, "Deposit: No proof needed for basic sale");
         } else if (_poolInformation[_pid].saleType == SALE_PUBLIC) {
-            uint256 limit = stakingPool.balanceOfAtTime(msg.sender, startTimestamp).mul(rateMultiplier).div(
-                (BASE_MULTIPLIER)
-            );
+            uint256 limit = stakingPool
+                .balanceOfAtTime(msg.sender, startTimestamp)
+                .mul(uint256(10)**lpTokenDecimals)
+                .mul(rateMultiplier)
+                .div(uint256(10)**stakingPool.tokenDecimals())
+                .div((BASE_MULTIPLIER));
             require(userAccumulated < limit, "Deposit: Not enough staking credit");
         }
 
@@ -400,6 +405,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         require(_lpToken != _offeringToken, "Operations: Tokens must be different");
 
         lpToken = IERC20(_lpToken);
+        lpTokenDecimals = IERC20Extended(_lpToken).decimals();
         offeringToken = IERC20(_offeringToken);
     }
 
