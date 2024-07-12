@@ -2,14 +2,14 @@
 pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./PancakeBunnies.sol";
+import "./SectaBunnies.sol";
 
 /** @title BunnyMintingStation.
  * @dev This contract allows different factories to mint
- * Pancake Collectibles/Bunnies.
+ * Secta Collectibles/Bunnies.
  */
 contract BunnyMintingStation is AccessControl {
-    PancakeBunnies public pancakeBunnies;
+    SectaBunnies public sectaBunnies;
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
@@ -25,13 +25,13 @@ contract BunnyMintingStation is AccessControl {
         _;
     }
 
-    constructor(PancakeBunnies _pancakeBunnies) public {
-        pancakeBunnies = _pancakeBunnies;
+    constructor(SectaBunnies _sectaBunnies) public {
+        sectaBunnies = _sectaBunnies;
         _setupRole(DEFAULT_ADMIN_ROLE, _msgSender());
     }
 
     /**
-     * @notice Mint NFTs from the PancakeBunnies contract.
+     * @notice Mint NFTs from the SectaBunnies contract.
      * Users can specify what bunnyId they want to mint. Users can claim once.
      * There is a limit on how many are distributed. It requires CAKE balance to be > 0.
      */
@@ -40,7 +40,7 @@ contract BunnyMintingStation is AccessControl {
         string calldata _tokenURI,
         uint8 _bunnyId
     ) external onlyMinter returns (uint256) {
-        uint256 tokenId = pancakeBunnies.mint(_tokenReceiver, _tokenURI, _bunnyId);
+        uint256 tokenId = sectaBunnies.mint(_tokenReceiver, _tokenURI, _bunnyId);
         return tokenId;
     }
 
@@ -49,7 +49,7 @@ contract BunnyMintingStation is AccessControl {
      * @dev Only the main admins can set it.
      */
     function setBunnyName(uint8 _bunnyId, string calldata _bunnyName) external onlyOwner {
-        pancakeBunnies.setBunnyName(_bunnyId, _bunnyName);
+        sectaBunnies.setBunnyName(_bunnyId, _bunnyName);
     }
 
     /**
@@ -57,6 +57,6 @@ contract BunnyMintingStation is AccessControl {
      * @dev Only the main admins can set it.
      */
     function changeOwnershipNFTContract(address _newOwner) external onlyOwner {
-        pancakeBunnies.transferOwnership(_newOwner);
+        sectaBunnies.transferOwnership(_newOwner);
     }
 }

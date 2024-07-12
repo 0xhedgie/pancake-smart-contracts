@@ -3,18 +3,18 @@ pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "bsc-library/contracts/IBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import "bsc-library/contracts/SafeBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "../PancakeBunnies.sol";
+import "../SectaBunnies.sol";
 
 contract BunnyFactoryV2 is Ownable {
     using SafeMath for uint256;
-    using SafeBEP20 for IBEP20;
+    using SafeERC20 for IERC20;
 
-    PancakeBunnies public pancakeBunnies;
-    IBEP20 public cakeToken;
+    SectaBunnies public sectaBunnies;
+    IERC20 public cakeToken;
 
     // end block number to get collectibles
     uint256 public endBlockNumber;
@@ -48,14 +48,14 @@ contract BunnyFactoryV2 is Ownable {
      * is defined as totalSupplyDistributed.
      */
     constructor(
-        PancakeBunnies _pancakeBunnies,
-        IBEP20 _cakeToken,
+        SectaBunnies _sectaBunnies,
+        IERC20 _cakeToken,
         uint256 _tokenPrice,
         string memory _ipfsHash,
         uint256 _startBlockNumber,
         uint256 _endBlockNumber
     ) public {
-        pancakeBunnies = _pancakeBunnies;
+        sectaBunnies = _sectaBunnies;
         cakeToken = _cakeToken;
         tokenPrice = _tokenPrice;
         ipfsHash = _ipfsHash;
@@ -64,7 +64,7 @@ contract BunnyFactoryV2 is Ownable {
     }
 
     /**
-     * @dev Mint NFTs from the PancakeBunnies contract.
+     * @dev Mint NFTs from the SectaBunnies contract.
      * Users can specify what bunnyId they want to mint. Users can claim once.
      * There is a limit on how many are distributed. It requires CAKE balance to be > 0.
      */
@@ -88,7 +88,7 @@ contract BunnyFactoryV2 is Ownable {
 
         string memory tokenURI = bunnyIdURIs[_bunnyId];
 
-        uint256 tokenId = pancakeBunnies.mint(address(_msgSender()), tokenURI, _bunnyId);
+        uint256 tokenId = sectaBunnies.mint(address(_msgSender()), tokenURI, _bunnyId);
 
         emit BunnyMint(_msgSender(), tokenId, _bunnyId);
     }
@@ -98,7 +98,7 @@ contract BunnyFactoryV2 is Ownable {
      * to a new address.
      */
     function changeOwnershipNFTContract(address _newOwner) external onlyOwner {
-        pancakeBunnies.transferOwnership(_newOwner);
+        sectaBunnies.transferOwnership(_newOwner);
     }
 
     /**
@@ -139,11 +139,11 @@ contract BunnyFactoryV2 is Ownable {
         string calldata _bunnyId8,
         string calldata _bunnyId9
     ) external onlyOwner {
-        pancakeBunnies.setBunnyName(5, _bunnyId5);
-        pancakeBunnies.setBunnyName(6, _bunnyId6);
-        pancakeBunnies.setBunnyName(7, _bunnyId7);
-        pancakeBunnies.setBunnyName(8, _bunnyId8);
-        pancakeBunnies.setBunnyName(9, _bunnyId9);
+        sectaBunnies.setBunnyName(5, _bunnyId5);
+        sectaBunnies.setBunnyName(6, _bunnyId6);
+        sectaBunnies.setBunnyName(7, _bunnyId7);
+        sectaBunnies.setBunnyName(8, _bunnyId8);
+        sectaBunnies.setBunnyName(9, _bunnyId9);
     }
 
     /**

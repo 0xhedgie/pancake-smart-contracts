@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 // CakeToken with Governance.
-contract CakeToken is ERC20("PancakeSwap Token", "Cake"), Ownable {
+contract CakeToken is ERC20("SectaFi Token", "Cake"), Ownable {
     /// @notice Creates `_amount` token to `_to`. Must only be called by the owner (MasterChef).
     function mint(address _to, uint256 _amount) public onlyOwner {
         _mint(_to, _amount);
@@ -18,7 +18,7 @@ contract CakeToken is ERC20("PancakeSwap Token", "Cake"), Ownable {
     // Which is copied and modified from COMPOUND:
     // https://github.com/compound-finance/compound-protocol/blob/master/contracts/Governance/Comp.sol
 
-    /// @notice A record of each accounts delegate
+    /// @dev A record of each accounts delegate
     mapping(address => address) internal _delegates;
 
     /// @notice A checkpoint for marking number of votes from a given block

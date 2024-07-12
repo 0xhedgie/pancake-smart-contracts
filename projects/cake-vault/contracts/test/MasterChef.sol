@@ -11,14 +11,14 @@ import "./SyrupBar.sol";
 // import "@nomiclabs/buidler/console.sol";
 
 interface IMigratorChef {
-    // Perform LP token migration from legacy PancakeSwap to CakeSwap.
+    // Perform LP token migration from legacy SectaFi to CakeSwap.
     // Take the current LP token address and return the new LP token address.
     // Migrator should have full access to the caller's LP token.
     // Return the new LP token address.
     //
-    // XXX Migrator must have allowance access to PancakeSwap LP tokens.
+    // XXX Migrator must have allowance access to SectaFi LP tokens.
     // CakeSwap must mint EXACTLY the same amount of CakeSwap LP tokens or
-    // else something bad will happen. Traditional PancakeSwap does not
+    // else something bad will happen. Traditional SectaFi does not
     // do that so be careful!
     function migrate(IERC20 token) external returns (IERC20);
 }

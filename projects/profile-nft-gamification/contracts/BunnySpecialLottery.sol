@@ -3,16 +3,16 @@ pragma solidity ^0.6.12;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import {IPancakeSwapLottery} from "lottery/contracts/interfaces/IPancakeSwapLottery.sol";
+import {ISectaFiLottery} from "lottery/contracts/interfaces/ISectaFiLottery.sol";
 import {BunnyMintingStation} from "./BunnyMintingStation.sol";
-import {PancakeProfile} from "./PancakeProfile.sol";
+import {SectaProfile} from "./SectaProfile.sol";
 
 contract BunnySpecialLottery is Ownable {
     /*** Contracts ***/
 
-    IPancakeSwapLottery public pancakeSwapLottery;
+    ISectaFiLottery public sectaFiLottery;
     BunnyMintingStation public bunnyMintingStation;
-    PancakeProfile public pancakeProfile;
+    SectaProfile public sectaProfile;
 
     /*** Storage ***/
 
@@ -43,9 +43,9 @@ contract BunnySpecialLottery is Ownable {
     /*** Constructor ***/
 
     constructor(
-        address _pancakeSwapLotteryAddress,
+        address _sectaFiLotteryAddress,
         address _bunnyMintingStationAddress,
-        address _pancakeProfileAddress,
+        address _sectaProfileAddress,
         uint256 _endBlock,
         string memory _tokenURI1,
         string memory _tokenURI2,
@@ -59,9 +59,9 @@ contract BunnySpecialLottery is Ownable {
         uint256 _startLotteryRound,
         uint256 _finalLotteryRound
     ) public {
-        pancakeSwapLottery = IPancakeSwapLottery(_pancakeSwapLotteryAddress);
+        sectaFiLottery = ISectaFiLottery(_sectaFiLotteryAddress);
         bunnyMintingStation = BunnyMintingStation(_bunnyMintingStationAddress);
-        pancakeProfile = PancakeProfile(_pancakeProfileAddress);
+        sectaProfile = SectaProfile(_sectaProfileAddress);
 
         endBlock = _endBlock;
 
@@ -106,8 +106,8 @@ contract BunnySpecialLottery is Ownable {
         // Mint collectible and send it to the user.
         uint256 tokenId = bunnyMintingStation.mintCollectible(msg.sender, tokenURIs[_bunnyId], _bunnyId);
 
-        // Increase point on PancakeSwap profile, for a given campaignId.
-        pancakeProfile.increaseUserPoints(msg.sender, numberPoints[_bunnyId], campaignIds[_bunnyId]);
+        // Increase point on SectaFi profile, for a given campaignId.
+        sectaProfile.increaseUserPoints(msg.sender, numberPoints[_bunnyId], campaignIds[_bunnyId]);
 
         emit BunnyMint(msg.sender, tokenId, _bunnyId);
     }
@@ -155,7 +155,7 @@ contract BunnySpecialLottery is Ownable {
     }
 
     /**
-     * @notice Change the campaignId for PancakeSwap Profile.
+     * @notice Change the campaignId for SectaFi Profile.
      * @dev Only callable by owner.
      */
     function changeCampaignId(uint8 _bunnyId, uint256 _campaignId) external onlyOwner validNftId(_bunnyId) {
@@ -164,7 +164,7 @@ contract BunnySpecialLottery is Ownable {
     }
 
     /**
-     * @notice Change the number of points for PancakeSwap Profile.
+     * @notice Change the number of points for SectaFi Profile.
      * @dev Only callable by owner.
      */
     function changeNumberPoints(uint8 _bunnyId, uint256 _numberPoints) external onlyOwner validNftId(_bunnyId) {
@@ -222,7 +222,7 @@ contract BunnySpecialLottery is Ownable {
         // Common requirements for being able to claim any NFT
         if (
             hasClaimed[_userAddress][_bunnyId] ||
-            !pancakeProfile.getUserStatus(_userAddress) ||
+            !sectaProfile.getUserStatus(_userAddress) ||
             block.number >= endBlock ||
             _lotteryId < startLotteryRound ||
             _lotteryId > finalLotteryRound
@@ -232,19 +232,14 @@ contract BunnySpecialLottery is Ownable {
 
         if (_bunnyId == nftId1) {
             uint256 size;
-            (, , , size) = pancakeSwapLottery.viewUserInfoForLotteryId(_userAddress, _lotteryId, 0, 1);
+            (, , , size) = sectaFiLottery.viewUserInfoForLotteryId(_userAddress, _lotteryId, 0, 1);
             return size > 0;
         }
         if (_bunnyId == nftId2) {
             bool[] memory ticketStatuses;
             uint256 size;
 
-            (, , ticketStatuses, size) = pancakeSwapLottery.viewUserInfoForLotteryId(
-                _userAddress,
-                _lotteryId,
-                _cursor,
-                1
-            );
+            (, , ticketStatuses, size) = sectaFiLottery.viewUserInfoForLotteryId(_userAddress, _lotteryId, _cursor, 1);
 
             return size > 0 && ticketStatuses[0];
         }

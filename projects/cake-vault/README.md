@@ -1,8 +1,8 @@
-# Pancake Cake Vault
+# Secta Cake Vault
 
 ## Description
 
-Pancakeswap Cake Vault for the CAKE token from the MasterChef.
+SectaFi Cake Vault for the CAKE token from the MasterChef.
 
 ## Deployment
 

@@ -3,10 +3,10 @@ pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "bsc-library/contracts/IBEP20.sol";
-import "bsc-library/contracts/SafeBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "./interfaces/IPancakeProfile.sol";
+import "./interfaces/ISectaProfile.sol";
 import "./BunnyMintingStation.sol";
 
 /** @title TradingCompV1.
@@ -14,11 +14,11 @@ import "./BunnyMintingStation.sol";
 based on off-chain events
 */
 contract TradingCompV1 is Ownable {
-    using SafeBEP20 for IBEP20;
+    using SafeERC20 for IERC20;
 
     BunnyMintingStation public bunnyMintingStation;
-    IBEP20 public cakeToken;
-    IPancakeProfile public pancakeProfile;
+    IERC20 public cakeToken;
+    ISectaProfile public sectaProfile;
 
     uint256 public constant numberTeams = 3;
 
@@ -61,18 +61,18 @@ contract TradingCompV1 is Ownable {
 
     /**
      * @notice It initializes the contract.
-     * @param _pancakeProfileAddress: PancakeProfile address
+     * @param _sectaProfileAddress: SectaProfile address
      * @param _bunnyStationAddress: BunnyMintingStation address
      * @param _cakeTokenAddress: the address of the CAKE token
      */
     constructor(
-        address _pancakeProfileAddress,
+        address _sectaProfileAddress,
         address _bunnyStationAddress,
         address _cakeTokenAddress
     ) public {
-        pancakeProfile = IPancakeProfile(_pancakeProfileAddress);
+        sectaProfile = ISectaProfile(_sectaProfileAddress);
         bunnyMintingStation = BunnyMintingStation(_bunnyStationAddress);
-        cakeToken = IBEP20(_cakeTokenAddress);
+        cakeToken = IERC20(_cakeTokenAddress);
         currentStatus = CompetitionStatus.Registration;
     }
 
@@ -103,7 +103,7 @@ contract TradingCompV1 is Ownable {
         }
 
         // User collects points
-        pancakeProfile.increaseUserPoints(
+        sectaProfile.increaseUserPoints(
             senderAddress,
             userRewards.pointUsers[userRewardGroup],
             userRewards.userCampaignId[userRewardGroup]
@@ -112,7 +112,7 @@ contract TradingCompV1 is Ownable {
 
     /**
      * @notice It allows users to register for trading competition
-     * @dev Only callable if the user has an active PancakeProfile.
+     * @dev Only callable if the user has an active SectaProfile.
      */
     function register() external {
         address senderAddress = _msgSender();
@@ -127,7 +127,7 @@ contract TradingCompV1 is Ownable {
         uint256 userTeamId;
         bool isUserActive;
 
-        (, , userTeamId, , , isUserActive) = pancakeProfile.getUserProfile(senderAddress);
+        (, , userTeamId, , , isUserActive) = sectaProfile.getUserProfile(senderAddress);
 
         require(isUserActive, "NOT_ACTIVE");
 

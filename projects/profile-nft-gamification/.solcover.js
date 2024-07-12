@@ -4,13 +4,13 @@
 
 module.exports = {
   skipFiles: [
-    "IPancakeProfile.sol",
+    "ISectaProfile.sol",
     "test/CakeToken.sol",
     "test/MasterChef.sol",
     "test/SyrupBar.sol",
     "utils/IFO.sol",
     "utils/MockAdmin.sol",
-    "utils/MockBEP20.sol",
+    "utils/MockERC20.sol",
     "utils/MockBunnies.sol",
     "utils/MockCats.sol",
     "old/BunnyFactoryV2.sol",

@@ -3,8 +3,8 @@ pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "bsc-library/contracts/IBEP20.sol";
-import "bsc-library/contracts/SafeBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 import "./archive/BunnyFactoryV2.sol";
 import "./BunnyMintingStation.sol";
@@ -14,12 +14,12 @@ import "./BunnyMintingStation.sol";
  */
 contract BunnyFactoryV3 is Ownable {
     using SafeMath for uint256;
-    using SafeBEP20 for IBEP20;
+    using SafeERC20 for IERC20;
 
     BunnyFactoryV2 public bunnyFactoryV2;
     BunnyMintingStation public bunnyMintingStation;
 
-    IBEP20 public cakeToken;
+    IERC20 public cakeToken;
 
     // starting block
     uint256 public startBlockNumber;
@@ -51,7 +51,7 @@ contract BunnyFactoryV3 is Ownable {
     constructor(
         BunnyFactoryV2 _bunnyFactoryV2,
         BunnyMintingStation _bunnyMintingStation,
-        IBEP20 _cakeToken,
+        IERC20 _cakeToken,
         uint256 _tokenPrice,
         string memory _ipfsHash,
         uint256 _startBlockNumber

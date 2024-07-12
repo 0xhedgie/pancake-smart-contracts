@@ -3,24 +3,24 @@ pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "bsc-library/contracts/IBEP20.sol";
-import "bsc-library/contracts/SafeBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 import "./BunnyMintingStation.sol";
-import "./PancakeProfile.sol";
+import "./SectaProfile.sol";
 
 /** @title BunnySpecialV2.
  * @notice It is a contract for users to mint exclusive Easter
  * collectibles for their teams.
  */
 contract BunnySpecialV2 is Ownable {
-    using SafeBEP20 for IBEP20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     BunnyMintingStation public bunnyMintingStation;
-    PancakeProfile public pancakeProfile;
+    SectaProfile public sectaProfile;
 
-    IBEP20 public cakeToken;
+    IERC20 public cakeToken;
 
     uint8 public constant previousNumberBunnyIds = 12;
 
@@ -46,14 +46,14 @@ contract BunnySpecialV2 is Ownable {
 
     constructor(
         BunnyMintingStation _bunnyMintingStation,
-        IBEP20 _cakeToken,
-        PancakeProfile _pancakeProfile,
+        IERC20 _cakeToken,
+        SectaProfile _sectaProfile,
         uint256 _thresholdUser,
         uint256 _endBlock
     ) public {
         bunnyMintingStation = _bunnyMintingStation;
         cakeToken = _cakeToken;
-        pancakeProfile = _pancakeProfile;
+        sectaProfile = _sectaProfile;
         thresholdUser = _thresholdUser;
         endBlock = _endBlock;
     }
@@ -74,7 +74,7 @@ contract BunnySpecialV2 is Ownable {
         uint256 userTeamId;
         bool isUserActive;
 
-        (userId, , userTeamId, , , isUserActive) = pancakeProfile.getUserProfile(senderAddress);
+        (userId, , userTeamId, , , isUserActive) = sectaProfile.getUserProfile(senderAddress);
 
         require(userId < thresholdUser, "ERR_USER_NOT_ELIGIBLE");
         require(isUserActive, "ERR_USER_NOT_ACTIVE");
@@ -135,11 +135,11 @@ contract BunnySpecialV2 is Ownable {
         if (hasClaimed[_userAddress]) {
             return false;
         } else {
-            if (!pancakeProfile.getUserStatus(_userAddress)) {
+            if (!sectaProfile.getUserStatus(_userAddress)) {
                 return false;
             } else {
                 uint256 userId;
-                (userId, , , , , ) = pancakeProfile.getUserProfile(_userAddress);
+                (userId, , , , , ) = sectaProfile.getUserProfile(_userAddress);
 
                 if (userId < thresholdUser) {
                     return true;

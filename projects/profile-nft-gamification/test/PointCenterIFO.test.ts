@@ -7,8 +7,8 @@ import { gasToBNB, gasToUSD } from "./helpers/GasCalculation";
 
 const MockBunnies = artifacts.require("./utils/MockBunnies.sol");
 const IFO = artifacts.require("./interfaces/IFO.sol");
-const MockBEP20 = artifacts.require("./utils/MockBEP20.sol");
-const PancakeProfile = artifacts.require("./PancakeProfile.sol");
+const MockERC20 = artifacts.require("./utils/MockERC20.sol");
+const SectaProfile = artifacts.require("./SectaProfile.sol");
 const PointCenterIFO = artifacts.require("./PointCenterIFO.sol");
 
 contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
@@ -17,7 +17,7 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
   const _numberCakeToRegister = parseEther("5"); // 5 CAKE
   const _numberCakeToUpdate = parseEther("2"); // 2 CAKE
 
-  let mockCake, mockBunnies, mockIFO, mockLP, mockOC, pancakeProfile, pointCenterIFO;
+  let mockCake, mockBunnies, mockIFO, mockLP, mockOC, sectaProfile, pointCenterIFO;
 
   let DEFAULT_ADMIN_ROLE, NFT_ROLE, POINT_ROLE;
   let result;
@@ -26,25 +26,25 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
 
   before(async () => {
     // Deploy MockCAKE
-    mockCake = await MockBEP20.new("Mock CAKE", "CAKE", _totalInitSupply, {
+    mockCake = await MockERC20.new("Mock CAKE", "CAKE", _totalInitSupply, {
       from: alice,
     });
 
     // Deploy MockLP
-    mockLP = await MockBEP20.new("Mock LP", "LP", _totalInitSupply, {
+    mockLP = await MockERC20.new("Mock LP", "LP", _totalInitSupply, {
       from: alice,
     });
 
     // Deploy MockOfferingCoin
-    mockOC = await MockBEP20.new("Mock Offering Coin", "OC", "500000000000000000", {
+    mockOC = await MockERC20.new("Mock Offering Coin", "OC", "500000000000000000", {
       from: alice,
     });
 
     // Deploy Mock Bunnies
     mockBunnies = await MockBunnies.new({ from: alice });
 
-    // Deploy Pancake Profile
-    pancakeProfile = await PancakeProfile.new(
+    // Deploy Secta Profile
+    sectaProfile = await SectaProfile.new(
       mockCake.address,
       _numberCakeToReactivate,
       _numberCakeToRegister,
@@ -52,9 +52,9 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
       { from: alice }
     );
 
-    DEFAULT_ADMIN_ROLE = await pancakeProfile.DEFAULT_ADMIN_ROLE();
-    NFT_ROLE = await pancakeProfile.NFT_ROLE();
-    POINT_ROLE = await pancakeProfile.POINT_ROLE();
+    DEFAULT_ADMIN_ROLE = await sectaProfile.DEFAULT_ADMIN_ROLE();
+    NFT_ROLE = await sectaProfile.NFT_ROLE();
+    POINT_ROLE = await sectaProfile.POINT_ROLE();
 
     const latestBlock = await time.latestBlock();
     startBlock = latestBlock.add(new BN(10));
@@ -73,7 +73,7 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
     );
 
     // Deploy PointCenterIFO
-    pointCenterIFO = await PointCenterIFO.new(pancakeProfile.address, "10", {
+    pointCenterIFO = await PointCenterIFO.new(sectaProfile.address, "10", {
       from: alice,
     });
 
@@ -99,15 +99,15 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
       assert.equal(String(await mockCake.totalSupply()), String(parseEther("50")));
     });
 
-    it("PancakeProfile is correct", async () => {
-      assert.equal(await pancakeProfile.cakeToken(), mockCake.address);
-      assert.equal(String(await pancakeProfile.numberCakeToReactivate()), String(_numberCakeToReactivate));
-      assert.equal(String(await pancakeProfile.numberCakeToRegister()), String(_numberCakeToRegister));
-      assert.equal(String(await pancakeProfile.numberCakeToUpdate()), String(_numberCakeToUpdate));
+    it("SectaProfile is correct", async () => {
+      assert.equal(await sectaProfile.cakeToken(), mockCake.address);
+      assert.equal(String(await sectaProfile.numberCakeToReactivate()), String(_numberCakeToReactivate));
+      assert.equal(String(await sectaProfile.numberCakeToRegister()), String(_numberCakeToRegister));
+      assert.equal(String(await sectaProfile.numberCakeToUpdate()), String(_numberCakeToUpdate));
       for (let role of [NFT_ROLE, POINT_ROLE]) {
-        assert.equal(await pancakeProfile.getRoleMemberCount(role), "0");
+        assert.equal(await sectaProfile.getRoleMemberCount(role), "0");
       }
-      assert.equal(await pancakeProfile.getRoleMemberCount(DEFAULT_ADMIN_ROLE), "1");
+      assert.equal(await sectaProfile.getRoleMemberCount(DEFAULT_ADMIN_ROLE), "1");
     });
 
     it("PointCenterIFO is correct", async () => {
@@ -118,7 +118,7 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
 
   describe("Initial set up", async () => {
     it("Alice adds NFT in the system", async () => {
-      result = await pancakeProfile.addNftAddress(mockBunnies.address, {
+      result = await sectaProfile.addNftAddress(mockBunnies.address, {
         from: alice,
       });
 
@@ -128,9 +128,9 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
         sender: alice,
       });
 
-      assert.equal(await pancakeProfile.getRoleMemberCount(NFT_ROLE), "1");
+      assert.equal(await sectaProfile.getRoleMemberCount(NFT_ROLE), "1");
 
-      await pancakeProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
+      await sectaProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
         from: alice,
       });
     });
@@ -149,12 +149,12 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
         result = await mockBunnies.mint({ from: thisUser });
 
         // Bob approves the contract to receive his NFT
-        await mockBunnies.approve(pancakeProfile.address, i, {
+        await mockBunnies.approve(sectaProfile.address, i, {
           from: thisUser,
         });
 
-        // Bob approves CAKE to be spent by PancakeProfile
-        await mockCake.approve(pancakeProfile.address, "10000000000000000000", {
+        // Bob approves CAKE to be spent by SectaProfile
+        await mockCake.approve(sectaProfile.address, "10000000000000000000", {
           from: thisUser,
         });
 
@@ -164,7 +164,7 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
         });
 
         // Creates the profile
-        await pancakeProfile.createProfile("1", mockBunnies.address, i, {
+        await sectaProfile.createProfile("1", mockBunnies.address, i, {
           from: thisUser,
         });
         i++;
@@ -233,7 +233,7 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
     });
 
     it("Bob deactivates his profile and tries to get points", async () => {
-      result = await pancakeProfile.pauseProfile({ from: bob });
+      result = await sectaProfile.pauseProfile({ from: bob });
 
       expectEvent(result, "UserPause", {
         userAddress: bob,
@@ -309,7 +309,7 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
     });
 
     it("Alice makes this application a pointAdmin", async () => {
-      result = await pancakeProfile.grantRole(POINT_ROLE, pointCenterIFO.address, {
+      result = await sectaProfile.grantRole(POINT_ROLE, pointCenterIFO.address, {
         from: alice,
       });
 
@@ -319,7 +319,7 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
         sender: alice,
       });
 
-      assert.equal(await pancakeProfile.getRoleMemberCount(POINT_ROLE), "1");
+      assert.equal(await sectaProfile.getRoleMemberCount(POINT_ROLE), "1");
     });
 
     it("Carol/David claim points", async () => {
@@ -329,7 +329,7 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
         });
 
         // Verify event
-        expectEvent.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease", {
+        expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
           userAddress: thisUser,
           numberPoints: "30",
           campaignId: "501012101",
@@ -337,7 +337,7 @@ contract("IFO Point logic", ([alice, bob, carol, david, erin, frank]) => {
 
         assert.equal(await pointCenterIFO.checkClaimStatus(thisUser, mockIFO.address), false);
 
-        result = await pancakeProfile.getUserProfile(thisUser);
+        result = await sectaProfile.getUserProfile(thisUser);
         assert.equal(result[1], "30");
       }
     });

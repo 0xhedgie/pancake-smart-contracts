@@ -6,16 +6,17 @@ import "hardhat-abi-exporter";
 import "hardhat-contract-sizer";
 import "solidity-coverage";
 import "dotenv/config";
+import "@nomicfoundation/hardhat-verify";
 
-const bscTestnet: NetworkUserConfig = {
-  url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
-  chainId: 97,
+const lineaTestnet: NetworkUserConfig = {
+  url: "https://linea-sepolia.blockpi.network/v1/rpc/public",
+  chainId: 59141,
   accounts: [process.env.KEY_TESTNET!],
 };
 
-const bscMainnet: NetworkUserConfig = {
-  url: "https://bsc-dataseed.binance.org/",
-  chainId: 56,
+const lineaMainnet: NetworkUserConfig = {
+  url: "https://rpc.linea.build",
+  chainId: 59144,
   accounts: [process.env.KEY_MAINNET!],
 };
 
@@ -23,8 +24,8 @@ const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
   networks: {
     hardhat: {},
-    // testnet: bscTestnet,
-    // mainnet: bscMainnet,
+    testnet: lineaTestnet,
+    mainnet: lineaMainnet,
   },
   solidity: {
     version: "0.6.12",
@@ -45,6 +46,34 @@ const config: HardhatUserConfig = {
     path: "./data/abi",
     clear: true,
     flat: false,
+  },
+  etherscan: {
+    apiKey: {
+      testnet: process.env.ETHERSCAN_API_KEY!,
+    },
+    customChains: [
+      {
+        network: "testnet",
+        chainId: 59141,
+        urls: {
+          apiURL: "https://api-sepolia.lineascan.build/api",
+          browserURL: "https://sepolia.lineascan.build/",
+        },
+      },
+      {
+        network: "mainnet",
+        chainId: 59144,
+        urls: {
+          apiURL: "https://api.lineascan.build/api",
+          browserURL: "https://lineascan.build/",
+        },
+      },
+    ],
+  },
+  sourcify: {
+    // Disabled by default
+    // Doesn't need an API key
+    enabled: true,
   },
 };
 

@@ -3,10 +3,10 @@ pragma solidity ^0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "bsc-library/contracts/IBEP20.sol";
-import "bsc-library/contracts/SafeBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "./interfaces/IPancakeProfile.sol";
+import "./interfaces/ISectaProfile.sol";
 import "./BunnyMintingStation.sol";
 import "./TradingCompV2.sol";
 
@@ -15,15 +15,15 @@ import "./TradingCompV2.sol";
 based on off-chain events
 */
 contract TradingCompV2RewardDistribution is Ownable {
-    using SafeBEP20 for IBEP20;
+    using SafeERC20 for IERC20;
 
     BunnyMintingStation public bunnyMintingStation;
-    IBEP20 public cakeToken;
-    IBEP20 public lazioToken;
-    IBEP20 public portoToken;
-    IBEP20 public santosToken;
+    IERC20 public cakeToken;
+    IERC20 public lazioToken;
+    IERC20 public portoToken;
+    IERC20 public santosToken;
 
-    IPancakeProfile public pancakeProfile;
+    ISectaProfile public sectaProfile;
     TradingCompV2 public tradingCompV2;
 
     uint256 public constant numberTeams = 3;
@@ -67,7 +67,7 @@ contract TradingCompV2RewardDistribution is Ownable {
 
     /**
      * @notice It initializes the contract.
-     * @param _pancakeProfileAddress: PancakeProfile address
+     * @param _sectaProfileAddress: SectaProfile address
      * @param _bunnyStationAddress: BunnyMintingStation address
      * @param _cakeTokenAddress: the address of the CAKE token
      * @param _lazioTokenAddress: the address of the LAZIO fan token
@@ -76,7 +76,7 @@ contract TradingCompV2RewardDistribution is Ownable {
      * @param _tradingCompV2Address: the address of the TradingCompV2 fan token
      */
     constructor(
-        address _pancakeProfileAddress,
+        address _sectaProfileAddress,
         address _bunnyStationAddress,
         address _cakeTokenAddress,
         address _lazioTokenAddress,
@@ -84,12 +84,12 @@ contract TradingCompV2RewardDistribution is Ownable {
         address _santosTokenAddress,
         address _tradingCompV2Address
     ) public {
-        pancakeProfile = IPancakeProfile(_pancakeProfileAddress);
+        sectaProfile = ISectaProfile(_sectaProfileAddress);
         bunnyMintingStation = BunnyMintingStation(_bunnyStationAddress);
-        cakeToken = IBEP20(_cakeTokenAddress);
-        lazioToken = IBEP20(_lazioTokenAddress);
-        portoToken = IBEP20(_portoTokenAddress);
-        santosToken = IBEP20(_santosTokenAddress);
+        cakeToken = IERC20(_cakeTokenAddress);
+        lazioToken = IERC20(_lazioTokenAddress);
+        portoToken = IERC20(_portoTokenAddress);
+        santosToken = IERC20(_santosTokenAddress);
         tradingCompV2 = TradingCompV2(_tradingCompV2Address);
         currentStatus = CompetitionStatus.Open;
     }
@@ -109,7 +109,7 @@ contract TradingCompV2RewardDistribution is Ownable {
         );
 
         uint256 userTeamId;
-        (, , userTeamId, , , ) = pancakeProfile.getUserProfile(senderAddress);
+        (, , userTeamId, , , ) = sectaProfile.getUserProfile(senderAddress);
 
         require(hasUserRegistered, "NOT_REGISTERED");
         require(!userTradingStats[senderAddress].hasClaimed && !hasUserClaimed, "HAS_CLAIMED");
@@ -131,7 +131,7 @@ contract TradingCompV2RewardDistribution is Ownable {
         }
 
         // User collects points
-        pancakeProfile.increaseUserPoints(
+        sectaProfile.increaseUserPoints(
             senderAddress,
             userRewards.pointUsers[userRewardGroup],
             userRewards.userCampaignId[userRewardGroup]
@@ -276,7 +276,7 @@ contract TradingCompV2RewardDistribution is Ownable {
         hasUserClaimed = hasUserClaimed || userTradingStats[_userAddress].hasClaimed;
 
         uint256 userTeamId;
-        (, , userTeamId, , , ) = pancakeProfile.getUserProfile(_userAddress);
+        (, , userTeamId, , , ) = sectaProfile.getUserProfile(_userAddress);
 
         bool canClaimNFT;
         if ((userTeamId == winningTeamId) && (userRewardGroup > 0)) {

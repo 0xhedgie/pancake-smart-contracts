@@ -3,19 +3,19 @@ pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "bsc-library/contracts/IBEP20.sol";
-import "bsc-library/contracts/SafeBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "../PancakeBunnies.sol";
+import "../SectaBunnies.sol";
 
 contract BunnyMintingFarm is Ownable {
     using SafeMath for uint8;
     using SafeMath for uint256;
 
-    using SafeBEP20 for IBEP20;
+    using SafeERC20 for IERC20;
 
-    PancakeBunnies public pancakeBunnies;
-    IBEP20 public cakeToken;
+    SectaBunnies public sectaBunnies;
+    IERC20 public cakeToken;
 
     // Map if address can claim a NFT
     mapping(address => bool) public canClaim;
@@ -61,14 +61,14 @@ contract BunnyMintingFarm is Ownable {
      * is defined as totalSupplyDistributed.
      */
     constructor(
-        IBEP20 _cakeToken,
+        IERC20 _cakeToken,
         uint256 _totalSupplyDistributed,
         uint256 _cakePerBurn,
         string memory _baseURI,
         string memory _ipfsHash,
         uint256 _endBlockNumber
     ) public {
-        pancakeBunnies = new PancakeBunnies(_baseURI);
+        sectaBunnies = new SectaBunnies(_baseURI);
         cakeToken = _cakeToken;
         totalSupplyDistributed = _totalSupplyDistributed;
         cakePerBurn = _cakePerBurn;
@@ -86,15 +86,15 @@ contract BunnyMintingFarm is Ownable {
         bunnyIdURIs[4] = string(abi.encodePacked(_ipfsHash, "sparkle.json"));
 
         // Set token names for each bunnyId
-        pancakeBunnies.setBunnyName(0, "Swapsies");
-        pancakeBunnies.setBunnyName(1, "Drizzle");
-        pancakeBunnies.setBunnyName(2, "Blueberries");
-        pancakeBunnies.setBunnyName(3, "Circular");
-        pancakeBunnies.setBunnyName(4, "Sparkle");
+        sectaBunnies.setBunnyName(0, "Swapsies");
+        sectaBunnies.setBunnyName(1, "Drizzle");
+        sectaBunnies.setBunnyName(2, "Blueberries");
+        sectaBunnies.setBunnyName(3, "Circular");
+        sectaBunnies.setBunnyName(4, "Sparkle");
     }
 
     /**
-     * @dev Mint NFTs from the PancakeBunnies contract.
+     * @dev Mint NFTs from the SectaBunnies contract.
      * Users can specify what bunnyId they want to mint. Users can claim once.
      * There is a limit on how many are distributed. It requires CAKE balance to be >0.
      */
@@ -117,21 +117,21 @@ contract BunnyMintingFarm is Ownable {
 
         string memory tokenURI = bunnyIdURIs[_bunnyId];
 
-        uint256 tokenId = pancakeBunnies.mint(address(msg.sender), tokenURI, _bunnyId);
+        uint256 tokenId = sectaBunnies.mint(address(msg.sender), tokenURI, _bunnyId);
 
         emit BunnyMint(msg.sender, tokenId, _bunnyId);
     }
 
     /**
-     * @dev Burn NFT from the PancakeBunnies contract.
+     * @dev Burn NFT from the SectaBunnies contract.
      * Users can burn their NFT to get a set number of CAKE.
      * There is a cap on how many can be distributed for free.
      */
     function burnNFT(uint256 _tokenId) external {
-        require(pancakeBunnies.ownerOf(_tokenId) == msg.sender, "Not the owner");
+        require(sectaBunnies.ownerOf(_tokenId) == msg.sender, "Not the owner");
         require(block.number < endBlockNumber, "too late");
 
-        pancakeBunnies.burn(_tokenId);
+        sectaBunnies.burn(_tokenId);
         countBunniesBurnt = countBunniesBurnt.add(1);
         cakeToken.safeTransfer(address(msg.sender), cakePerBurn);
         emit BunnyBurn(msg.sender, _tokenId);
@@ -169,6 +169,6 @@ contract BunnyMintingFarm is Ownable {
      * to a new address.
      */
     function changeOwnershipNFTContract(address _newOwner) external onlyOwner {
-        pancakeBunnies.transferOwnership(_newOwner);
+        sectaBunnies.transferOwnership(_newOwner);
     }
 }

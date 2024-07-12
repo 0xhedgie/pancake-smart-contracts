@@ -2,15 +2,15 @@ import { assert } from "chai";
 import { expectEvent, expectRevert, time } from "@openzeppelin/test-helpers";
 import { artifacts, contract, ethers } from "hardhat";
 
-const MockBEP20 = artifacts.require("./utils/MockBEP20.sol");
+const MockERC20 = artifacts.require("./utils/MockERC20.sol");
 const BunnyFactoryV2 = artifacts.require("./archive/BunnyFactoryV2.sol");
 const BunnyMintingFarm = artifacts.require("./BunnyMintingFarm.sol");
-const PancakeBunnies = artifacts.require("./PancakeBunnies.sol");
+const SectaBunnies = artifacts.require("./SectaBunnies.sol");
 
 contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTester]) => {
   let mockCAKE,
-    pancakeBunnies,
-    pancakeBunniesAddress,
+    sectaBunnies,
+    sectaBunniesAddress,
     bunnyMintingFarm,
     bunnyFactoryV2,
     bunnyMintingFarmAddress,
@@ -24,7 +24,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
     let _ipfsHash = "IPFSHASH/";
     let _endBlockTime = 150;
 
-    mockCAKE = await MockBEP20.new("Pancake Mock Token", "CAKE", 10000, {
+    mockCAKE = await MockERC20.new("Secta Mock Token", "CAKE", 10000, {
       from: minterTester,
     });
 
@@ -39,22 +39,22 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
     );
 
     bunnyMintingFarmAddress = bunnyMintingFarm.address;
-    pancakeBunniesAddress = await bunnyMintingFarm.pancakeBunnies();
-    pancakeBunnies = await PancakeBunnies.at(pancakeBunniesAddress);
+    sectaBunniesAddress = await bunnyMintingFarm.sectaBunnies();
+    sectaBunnies = await SectaBunnies.at(sectaBunniesAddress);
   });
 
   // Check ticker, symbols, supply, and owner are correct
   describe("All contracts are deployed correctly", async () => {
     it("Symbol is correct", async () => {
-      result = await pancakeBunnies.symbol();
+      result = await sectaBunnies.symbol();
       assert.equal(result, "PB");
     });
     it("Name is correct", async () => {
-      result = await pancakeBunnies.name();
-      assert.equal(result, "Pancake Bunnies");
+      result = await sectaBunnies.name();
+      assert.equal(result, "Secta Bunnies");
     });
     it("Total supply + number of NFT distributed is 0", async () => {
-      result = await pancakeBunnies.totalSupply();
+      result = await sectaBunnies.totalSupply();
       assert.equal(result, 0);
       result = await bunnyMintingFarm.totalSupplyDistributed();
       assert.equal(result, 5);
@@ -62,7 +62,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       assert.equal(result, 0);
     });
     it("Owner is the BunnyMintingFarm contract", async () => {
-      result = await pancakeBunnies.owner();
+      result = await sectaBunnies.owner();
       assert.equal(result, bunnyMintingFarmAddress);
       result = await bunnyMintingFarm.owner();
       assert.equal(result, alice);
@@ -115,11 +115,11 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       });
 
       // check totalSupply and CAKE balance of Alice
-      result = await pancakeBunnies.totalSupply();
+      result = await sectaBunnies.totalSupply();
       assert.equal(result, 1);
-      result = await pancakeBunnies.balanceOf(alice);
+      result = await sectaBunnies.balanceOf(alice);
       assert.equal(result, 1);
-      result = await pancakeBunnies.ownerOf("0");
+      result = await sectaBunnies.ownerOf("0");
       assert.equal(result, alice);
       result = await bunnyMintingFarm.currentDistributedSupply();
       assert.equal(result, 1);
@@ -127,11 +127,11 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       assert.equal(result, true);
 
       // Check how many exists for a specific bunnyCount
-      result = await pancakeBunnies.bunnyCount("3");
+      result = await sectaBunnies.bunnyCount("3");
       assert.equal(result, 1);
 
       // Check token URI is ok
-      result = await pancakeBunnies.tokenURI("0");
+      result = await sectaBunnies.tokenURI("0");
       assert.equal(result, "ipfs://ipfs/IPFSHASH/circular.json");
 
       // verify Alice cannot claim twice
@@ -174,52 +174,52 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       assert.equal(result.toString(), result2.toString());
 
       // Check how many exists for a specific bunnyCount
-      result = await pancakeBunnies.bunnyCount("0");
+      result = await sectaBunnies.bunnyCount("0");
       assert.equal(result, 1);
-      result = await pancakeBunnies.bunnyCount("1");
+      result = await sectaBunnies.bunnyCount("1");
       assert.equal(result, 1);
-      result = await pancakeBunnies.bunnyCount("2");
+      result = await sectaBunnies.bunnyCount("2");
       assert.equal(result, 2);
-      result = await pancakeBunnies.bunnyCount("3");
+      result = await sectaBunnies.bunnyCount("3");
       assert.equal(result, 1);
-      result = await pancakeBunnies.bunnyCount("4");
+      result = await sectaBunnies.bunnyCount("4");
       assert.equal(result, 0);
-      result = await pancakeBunnies.bunnyCount("5");
+      result = await sectaBunnies.bunnyCount("5");
       assert.equal(result, 0);
     });
 
     it("Names and ids of Bunnies are appropriate", async () => {
-      result = await pancakeBunnies.getBunnyName(0);
+      result = await sectaBunnies.getBunnyName(0);
       assert.equal(result, "Swapsies");
-      result = await pancakeBunnies.getBunnyName(1);
+      result = await sectaBunnies.getBunnyName(1);
       assert.equal(result, "Drizzle");
-      result = await pancakeBunnies.getBunnyName(2);
+      result = await sectaBunnies.getBunnyName(2);
       assert.equal(result, "Blueberries");
-      result = await pancakeBunnies.getBunnyName(3);
+      result = await sectaBunnies.getBunnyName(3);
       assert.equal(result, "Circular");
-      result = await pancakeBunnies.getBunnyName(4);
+      result = await sectaBunnies.getBunnyName(4);
       assert.equal(result, "Sparkle");
 
-      result = await pancakeBunnies.getBunnyId(0);
+      result = await sectaBunnies.getBunnyId(0);
       assert.equal(result, 3);
-      result = await pancakeBunnies.getBunnyId(1);
+      result = await sectaBunnies.getBunnyId(1);
       assert.equal(result, 1);
-      result = await pancakeBunnies.getBunnyId(2);
+      result = await sectaBunnies.getBunnyId(2);
       assert.equal(result, 2);
-      result = await pancakeBunnies.getBunnyId(3);
+      result = await sectaBunnies.getBunnyId(3);
       assert.equal(result, 2);
-      result = await pancakeBunnies.getBunnyId(4);
+      result = await sectaBunnies.getBunnyId(4);
       assert.equal(result, 0);
 
-      result = await pancakeBunnies.getBunnyNameOfTokenId(0);
+      result = await sectaBunnies.getBunnyNameOfTokenId(0);
       assert.equal(result, "Circular");
-      result = await pancakeBunnies.getBunnyNameOfTokenId(1);
+      result = await sectaBunnies.getBunnyNameOfTokenId(1);
       assert.equal(result, "Drizzle");
-      result = await pancakeBunnies.getBunnyNameOfTokenId(2);
+      result = await sectaBunnies.getBunnyNameOfTokenId(2);
       assert.equal(result, "Blueberries");
-      result = await pancakeBunnies.getBunnyNameOfTokenId(3);
+      result = await sectaBunnies.getBunnyNameOfTokenId(3);
       assert.equal(result, "Blueberries");
-      result = await pancakeBunnies.getBunnyNameOfTokenId(4);
+      result = await sectaBunnies.getBunnyNameOfTokenId(4);
       assert.equal(result, "Swapsies");
     });
 
@@ -253,7 +253,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       assert.equal(result, "1");
 
       // Check Carol has no NFT
-      result = await pancakeBunnies.balanceOf(carol);
+      result = await sectaBunnies.balanceOf(carol);
       assert.equal(result, 0);
 
       // Check CAKE balance of the account decreases
@@ -277,7 +277,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       // Alice tries to withdraw more
       await expectRevert(
         bunnyMintingFarm.withdrawCake(2000, { from: alice }),
-        "BEP20: transfer amount exceeds balance"
+        "ERC20: transfer amount exceeds balance"
       );
 
       await bunnyMintingFarm.withdrawCake(80, { from: alice });
@@ -295,7 +295,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
 
   describe("BunnyFactoryV2", async () => {
     it("NFT contract cannot change owner by a third party", async () => {
-      result2 = await pancakeBunnies.owner();
+      result2 = await sectaBunnies.owner();
 
       // Check that only the owner of the bunnyMintingFarm can call it
       await expectRevert(
@@ -305,7 +305,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
     });
 
     it("NFT contract owner changes correctly", async () => {
-      // Alice, the owner, calls to change the ownership of the PancakeBunnies contract to Bob
+      // Alice, the owner, calls to change the ownership of the SectaBunnies contract to Bob
       result = await bunnyMintingFarm.changeOwnershipNFTContract(bob, {
         from: alice,
       });
@@ -316,7 +316,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       });
 
       // Check the new owner
-      result = await pancakeBunnies.owner();
+      result = await sectaBunnies.owner();
 
       // Verify that the old owner is not the new owner
       assert.notEqual(result, result2);
@@ -333,7 +333,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       const _startBlockNumber = 1;
 
       bunnyFactoryV2 = await BunnyFactoryV2.new(
-        pancakeBunnies.address,
+        sectaBunnies.address,
         mockCAKE.address,
         _tokenPrice,
         _ipfsHash,
@@ -343,7 +343,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       );
 
       // Transfer ownership to Alice
-      result = await pancakeBunnies.transferOwnership(bunnyFactoryV2.address, { from: bob });
+      result = await sectaBunnies.transferOwnership(bunnyFactoryV2.address, { from: bob });
 
       expectEvent(result, "OwnershipTransferred", {
         previousOwner: bob,
@@ -351,7 +351,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       });
 
       // Check the new owner is BunnyFactoryV2
-      assert.equal(await pancakeBunnies.owner(), bunnyFactoryV2.address);
+      assert.equal(await sectaBunnies.owner(), bunnyFactoryV2.address);
       assert.equal(await bunnyFactoryV2.startBlockNumber(), _startBlockNumber);
       assert.equal(await bunnyFactoryV2.endBlockNumber(), _endBlockNumber);
       assert.equal(await bunnyFactoryV2.tokenPrice(), _tokenPrice);
@@ -362,19 +362,19 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
         from: alice,
       });
 
-      result = await pancakeBunnies.getBunnyName("5");
+      result = await sectaBunnies.getBunnyName("5");
       assert.equal(result, "MyBunny5");
 
-      result = await pancakeBunnies.getBunnyName("6");
+      result = await sectaBunnies.getBunnyName("6");
       assert.equal(result, "MyBunny6");
 
-      result = await pancakeBunnies.getBunnyName("7");
+      result = await sectaBunnies.getBunnyName("7");
       assert.equal(result, "MyBunny7");
 
-      result = await pancakeBunnies.getBunnyName("8");
+      result = await sectaBunnies.getBunnyName("8");
       assert.equal(result, "MyBunny8");
 
-      result = await pancakeBunnies.getBunnyName("9");
+      result = await sectaBunnies.getBunnyName("9");
       assert.equal(result, "MyBunny9");
 
       result = await bunnyFactoryV2.setBunnyJson("test5.json", "test6.json", "test7.json", "test8.json", "test9.json", {
@@ -387,7 +387,7 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       await mockCAKE.mintTokens("10000000000000000000", { from: alice });
 
       // CAKE was not approved
-      await expectRevert(bunnyFactoryV2.mintNFT("6", { from: alice }), "BEP20: transfer amount exceeds allowance");
+      await expectRevert(bunnyFactoryV2.mintNFT("6", { from: alice }), "ERC20: transfer amount exceeds allowance");
 
       result = await mockCAKE.approve(bunnyFactoryV2.address, "10000000000000000000", { from: alice });
 
@@ -409,17 +409,17 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
         bunnyId: "6",
       });
 
-      result = await pancakeBunnies.totalSupply();
+      result = await sectaBunnies.totalSupply();
       assert.equal(result.toString(), "5");
       assert.equal(await bunnyFactoryV2.hasClaimed(alice), true);
 
-      result = await pancakeBunnies.bunnyCount("6");
+      result = await sectaBunnies.bunnyCount("6");
       assert.equal(result.toString(), "1");
 
-      result = await pancakeBunnies.getBunnyNameOfTokenId("5");
+      result = await sectaBunnies.getBunnyNameOfTokenId("5");
       assert.equal(result, "MyBunny6");
 
-      result = await pancakeBunnies.getBunnyId("5");
+      result = await sectaBunnies.getBunnyId("5");
       assert.equal(result, "6");
 
       result = await mockCAKE.balanceOf(bunnyFactoryV2.address);
@@ -484,18 +484,18 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
         bunnyId: "8",
       });
 
-      result = await pancakeBunnies.totalSupply();
+      result = await sectaBunnies.totalSupply();
       assert.equal(result.toString(), "6");
 
       assert.equal(await bunnyFactoryV2.hasClaimed(bob), true);
 
-      result = await pancakeBunnies.bunnyCount("8");
+      result = await sectaBunnies.bunnyCount("8");
       assert.equal(result.toString(), "1");
 
-      result = await pancakeBunnies.getBunnyNameOfTokenId("6");
+      result = await sectaBunnies.getBunnyNameOfTokenId("6");
       assert.equal(result, "MyBunny8");
 
-      result = await pancakeBunnies.getBunnyId("6");
+      result = await sectaBunnies.getBunnyId("6");
       assert.equal(result, "8");
 
       result = await mockCAKE.balanceOf(bunnyFactoryV2.address);
@@ -566,9 +566,9 @@ contract("BunnyMintingFarm", ([alice, bob, carol, david, erin, frank, minterTest
       });
 
       // Verify events
-      expectEvent.inTransaction(result.receipt.transactionHash, pancakeBunnies, "OwnershipTransferred");
+      expectEvent.inTransaction(result.receipt.transactionHash, sectaBunnies, "OwnershipTransferred");
       // Check the new owner is Bob
-      assert.equal(await pancakeBunnies.owner(), bob);
+      assert.equal(await sectaBunnies.owner(), bob);
     });
   });
 });

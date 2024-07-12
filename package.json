@@ -1,17 +1,18 @@
 {
-  "name": "pancake-contracts",
+  "name": "secta-contracts",
   "version": "1.0.0",
-  "description": "Pancake contracts",
+  "description": "Secta contracts",
   "private": true,
   "workspaces": [
-    "projects/**"
+    "projects/**",
+    "common"
   ],
-  "repository": "https://github.com/pancakeswap/pancake-contracts",
-  "author": "PancakeSwap",
+  "repository": "https://github.com/secta-finance/secta-smart-contracts",
+  "author": "SectaFinance",
   "license": "MIT",
   "scripts": {
-    "format:check": "prettier --check 'projects/**/*.{js,ts,sol}'",
-    "format:write": "prettier --write 'projects/**/*.{js,ts,sol}'",
+    "format:check": "prettier --check \"projects/**/*.{js,ts,sol}\"",
+    "format:write": "prettier --write \"projects/**/*.{js,ts,sol}\"",
     "prepare": "husky install",
     "test": "lerna run test"
   },

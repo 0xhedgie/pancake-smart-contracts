@@ -11,11 +11,10 @@
     "test:size-contracts": "npx hardhat size-contracts"
   },
   "dependencies": {
-    "bsc-library": "1.0.0",
-    "profile-nft-gamification": "2.0.0",
-    "pancake-cake-vault": "1.0.0"
+    "@openzeppelin/merkle-tree": "^1.0.6"
   },
   "devDependencies": {
-    "@openzeppelin/contracts": "^3.2.0"
+    "@nomicfoundation/hardhat-verify": "^2.0.2",
+    "@openzeppelin/contracts": "3.4.2"
   }
 }

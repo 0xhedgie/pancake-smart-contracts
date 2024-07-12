@@ -4,10 +4,10 @@ pragma solidity ^0.6.12;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "pancake-cake-vault/contracts/CakeVault.sol";
+import "secta-cake-vault/contracts/CakeVault.sol";
 
 import "./BunnyMintingStation.sol";
-import "./PancakeProfile.sol";
+import "./SectaProfile.sol";
 
 /**
  * @title BunnySpecialCakeVault.
@@ -18,7 +18,7 @@ contract BunnySpecialCakeVault is Ownable {
 
     BunnyMintingStation public bunnyMintingStation;
     CakeVault public cakeVault;
-    PancakeProfile public pancakeProfile;
+    SectaProfile public sectaProfile;
 
     uint8 public constant bunnyId = 16;
 
@@ -26,7 +26,7 @@ contract BunnySpecialCakeVault is Ownable {
     uint256 public endBlock;
     uint256 public thresholdTimestamp;
 
-    // PancakeSwap Profile related.
+    // SectaFi Profile related.
     uint256 public numberPoints;
     uint256 public campaignId;
 
@@ -44,7 +44,7 @@ contract BunnySpecialCakeVault is Ownable {
     constructor(
         address _cakeVault,
         address _bunnyMintingStation,
-        address _pancakeProfile,
+        address _sectaProfile,
         uint256 _endBlock,
         uint256 _thresholdTimestamp,
         uint256 _numberPoints,
@@ -53,7 +53,7 @@ contract BunnySpecialCakeVault is Ownable {
     ) public {
         cakeVault = CakeVault(_cakeVault);
         bunnyMintingStation = BunnyMintingStation(_bunnyMintingStation);
-        pancakeProfile = PancakeProfile(_pancakeProfile);
+        sectaProfile = SectaProfile(_sectaProfile);
         endBlock = _endBlock;
         thresholdTimestamp = _thresholdTimestamp;
         numberPoints = _numberPoints;
@@ -72,7 +72,7 @@ contract BunnySpecialCakeVault is Ownable {
         require(!hasClaimed[msg.sender], "ERR_HAS_CLAIMED");
 
         bool isUserActive;
-        (, , , , , isUserActive) = pancakeProfile.getUserProfile(msg.sender);
+        (, , , , , isUserActive) = sectaProfile.getUserProfile(msg.sender);
 
         require(isUserActive, "ERR_USER_NOT_ACTIVE");
 
@@ -87,14 +87,14 @@ contract BunnySpecialCakeVault is Ownable {
         // Mint collectible and send it to the user.
         uint256 tokenId = bunnyMintingStation.mintCollectible(msg.sender, tokenURI, bunnyId);
 
-        // Increase point on PancakeSwap profile, for a given campaignId.
-        pancakeProfile.increaseUserPoints(msg.sender, numberPoints, campaignId);
+        // Increase point on SectaFi profile, for a given campaignId.
+        sectaProfile.increaseUserPoints(msg.sender, numberPoints, campaignId);
 
         emit BunnyMint(msg.sender, tokenId, bunnyId);
     }
 
     /**
-     * @notice Change the campaignId for PancakeSwap Profile.
+     * @notice Change the campaignId for SectaFi Profile.
      * @dev Only callable by owner.
      */
     function changeCampaignId(uint256 _campaignId) external onlyOwner {
@@ -114,7 +114,7 @@ contract BunnySpecialCakeVault is Ownable {
     }
 
     /**
-     * @notice Change the number of points for PancakeSwap Profile.
+     * @notice Change the number of points for SectaFi Profile.
      * @dev Only callable by owner.
      */
     function changeNumberPoints(uint256 _numberPoints) external onlyOwner {
@@ -147,7 +147,7 @@ contract BunnySpecialCakeVault is Ownable {
         if (hasClaimed[_userAddress]) {
             return false;
         } else {
-            if (!pancakeProfile.getUserStatus(_userAddress)) {
+            if (!sectaProfile.getUserStatus(_userAddress)) {
                 return false;
             } else {
                 uint256 lastDepositedTime;

@@ -27,8 +27,8 @@ const main = async () => {
   await bunnyMintingFarm.deployed();
   console.log("BunnyMintingFarm deployed to:", bunnyMintingFarm.address);
 
-  const pancakeBunniesAddress = await bunnyMintingFarm.pancakeBunnies();
-  console.log("PancakeBunnies deployed to:", pancakeBunniesAddress);
+  const sectaBunniesAddress = await bunnyMintingFarm.sectaBunnies();
+  console.log("SectaBunnies deployed to:", sectaBunniesAddress);
 };
 
 main()

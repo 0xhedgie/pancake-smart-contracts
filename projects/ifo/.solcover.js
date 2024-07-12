@@ -3,7 +3,7 @@
 // https://github.com/sc-forks/solidity-coverage/blob/master/HARDHAT_README.md#usage
 
 module.exports = {
-  skipFiles: ["archive/IFO.sol", "utils/MockBEP20.sol", "utils/MockBunnies.sol"],
+  skipFiles: ["archive/IFO.sol", "utils/MockERC20.sol", "utils/MockBunnies.sol"],
   measureStatementCoverage: false,
   measureFunctionCoverage: true,
 };

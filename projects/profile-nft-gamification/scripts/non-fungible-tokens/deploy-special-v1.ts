@@ -17,7 +17,7 @@ const main = async () => {
   const bunnySpecialV1 = await BunnySpecialV1.deploy(
     config.BunnyMintingStation[currentNetwork],
     config.CakeToken[currentNetwork],
-    config.PancakeProfile[currentNetwork],
+    config.SectaProfile[currentNetwork],
     _maxViewLength
   );
 

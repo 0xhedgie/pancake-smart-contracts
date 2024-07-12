@@ -4,10 +4,10 @@ import { artifacts, contract } from "hardhat";
 
 const { gasToBNB, gasToUSD } = require("./helpers/GasCalculation");
 
-const MockBEP20 = artifacts.require("./utils/MockBEP20.sol");
+const MockERC20 = artifacts.require("./utils/MockERC20.sol");
 const MockBunnies = artifacts.require("./utils/MockBunnies.sol");
 const MockCats = artifacts.require("./utils/MockCats.sol");
-const PancakeProfile = artifacts.require("./PancakeProfile.sol");
+const SectaProfile = artifacts.require("./SectaProfile.sol");
 
 contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
   const _totalInitSupply = "50000000000000000000"; // 50 CAKE
@@ -15,18 +15,18 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
   const _numberCakeToRegister = "5000000000000000000"; // 5 CAKE
   const _numberCakeToUpdate = "2000000000000000000"; // 2 CAKE
 
-  let mockBunnies, mockCats, mockCake, pancakeProfile;
+  let mockBunnies, mockCats, mockCake, sectaProfile;
   let DEFAULT_ADMIN_ROLE, SPECIAL_ROLE, NFT_ROLE, POINT_ROLE;
   let result;
 
   before(async () => {
-    mockCake = await MockBEP20.new("Mock CAKE", "CAKE", _totalInitSupply, {
+    mockCake = await MockERC20.new("Mock CAKE", "CAKE", _totalInitSupply, {
       from: alice,
     });
 
     mockBunnies = await MockBunnies.new({ from: alice });
 
-    pancakeProfile = await PancakeProfile.new(
+    sectaProfile = await SectaProfile.new(
       mockCake.address,
       _numberCakeToReactivate,
       _numberCakeToRegister,
@@ -34,10 +34,10 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       { from: alice }
     );
 
-    DEFAULT_ADMIN_ROLE = await pancakeProfile.DEFAULT_ADMIN_ROLE();
-    NFT_ROLE = await pancakeProfile.NFT_ROLE();
-    POINT_ROLE = await pancakeProfile.POINT_ROLE();
-    SPECIAL_ROLE = await pancakeProfile.SPECIAL_ROLE();
+    DEFAULT_ADMIN_ROLE = await sectaProfile.DEFAULT_ADMIN_ROLE();
+    NFT_ROLE = await sectaProfile.NFT_ROLE();
+    POINT_ROLE = await sectaProfile.POINT_ROLE();
+    SPECIAL_ROLE = await sectaProfile.SPECIAL_ROLE();
   });
 
   // Check ticker, symbols, supply, and owners are correct
@@ -57,24 +57,24 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       assert.equal(await mockCake.totalSupply(), "50000000000000000000");
     });
 
-    it("Initial parameters are correct for PancakeProfile", async () => {
-      assert.equal(await pancakeProfile.cakeToken(), mockCake.address);
-      assert.equal(await pancakeProfile.numberCakeToRegister(), _numberCakeToRegister);
-      assert.equal(await pancakeProfile.numberCakeToUpdate(), _numberCakeToUpdate);
-      assert.equal(await pancakeProfile.numberCakeToReactivate(), _numberCakeToReactivate);
+    it("Initial parameters are correct for SectaProfile", async () => {
+      assert.equal(await sectaProfile.cakeToken(), mockCake.address);
+      assert.equal(await sectaProfile.numberCakeToRegister(), _numberCakeToRegister);
+      assert.equal(await sectaProfile.numberCakeToUpdate(), _numberCakeToUpdate);
+      assert.equal(await sectaProfile.numberCakeToReactivate(), _numberCakeToReactivate);
 
       for (let role of [SPECIAL_ROLE, NFT_ROLE, POINT_ROLE]) {
-        assert.equal(await pancakeProfile.getRoleMemberCount(role), "0");
+        assert.equal(await sectaProfile.getRoleMemberCount(role), "0");
       }
 
-      assert.equal(await pancakeProfile.getRoleMemberCount(DEFAULT_ADMIN_ROLE), "1");
+      assert.equal(await sectaProfile.getRoleMemberCount(DEFAULT_ADMIN_ROLE), "1");
     });
   });
 
   describe("Logic to register and create team works as expected", async () => {
     it("Bob cannot create a profile if teamId is invalid", async () => {
       await expectRevert(
-        pancakeProfile.createProfile("0", mockBunnies.address, "0", {
+        sectaProfile.createProfile("0", mockBunnies.address, "0", {
           from: bob,
         }),
         "Invalid teamId"
@@ -82,7 +82,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
     });
 
     it("Alice creates a team and data is reflected accordingly", async () => {
-      result = await pancakeProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
+      result = await sectaProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
         from: alice,
       });
 
@@ -92,7 +92,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       });
 
       // Verify the team is created properly
-      result = await pancakeProfile.getTeamProfile("1");
+      result = await sectaProfile.getTeamProfile("1");
       assert.equal(result[0], "The Testers");
       assert.equal(result[1], "ipfs://hash/team1.json");
       assert.equal(result[2], "0");
@@ -102,13 +102,13 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
 
     it("Bob cannot mint a NFT if contract address not supported", async () => {
       await expectRevert(
-        pancakeProfile.createProfile("1", mockBunnies.address, "0", {
+        sectaProfile.createProfile("1", mockBunnies.address, "0", {
           from: bob,
         }),
         "NFT address invalid"
       );
 
-      result = await pancakeProfile.addNftAddress(mockBunnies.address, {
+      result = await sectaProfile.addNftAddress(mockBunnies.address, {
         from: alice,
       });
 
@@ -118,13 +118,13 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
         sender: alice,
       });
 
-      assert.equal(await pancakeProfile.getRoleMemberCount(NFT_ROLE), "1");
+      assert.equal(await sectaProfile.getRoleMemberCount(NFT_ROLE), "1");
     });
 
     it("Bob cannot create a profile without a NFT to spend", async () => {
       // Bob is trying to spend a token that doesn't exist
       await expectRevert(
-        pancakeProfile.createProfile("1", mockBunnies.address, "0", {
+        sectaProfile.createProfile("1", mockBunnies.address, "0", {
           from: bob,
         }),
         "ERC721: owner query for nonexistent token"
@@ -140,20 +140,20 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
     it("Bob cannot create a profile without approving the NFT to be spent", async () => {
       // Bob will not be able to transfer because contract not approved
       await expectRevert(
-        pancakeProfile.createProfile("1", mockBunnies.address, "0", {
+        sectaProfile.createProfile("1", mockBunnies.address, "0", {
           from: bob,
         }),
         "ERC721: transfer caller is not owner nor approved"
       );
 
       // Bob approves the contract to receive his NFT
-      result = await mockBunnies.approve(pancakeProfile.address, "0", {
+      result = await mockBunnies.approve(sectaProfile.address, "0", {
         from: bob,
       });
 
       expectEvent(result, "Approval", {
         owner: bob,
-        approved: pancakeProfile.address,
+        approved: sectaProfile.address,
         tokenId: "0",
       });
     });
@@ -161,10 +161,10 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
     it("Bob cannot create a profile without CAKE tokens in his wallet", async () => {
       // Bob doesn't have CAKE
       await expectRevert(
-        pancakeProfile.createProfile("1", mockBunnies.address, "0", {
+        sectaProfile.createProfile("1", mockBunnies.address, "0", {
           from: bob,
         }),
-        "BEP20: transfer amount exceeds balance"
+        "ERC20: transfer amount exceeds balance"
       );
 
       // Bob mints 10 CAKE
@@ -179,24 +179,24 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
     it("Bob cannot create a profile without CAKE token approval to be spent", async () => {
       // Bob didn't approve CAKE to be spent
       await expectRevert(
-        pancakeProfile.createProfile("1", mockBunnies.address, "0", {
+        sectaProfile.createProfile("1", mockBunnies.address, "0", {
           from: bob,
         }),
-        "BEP20: transfer amount exceeds allowance"
+        "ERC20: transfer amount exceeds allowance"
       );
 
       // Bob approves the CAKE token to be spent
-      result = await mockCake.approve(pancakeProfile.address, "5000000000000000000", { from: bob });
+      result = await mockCake.approve(sectaProfile.address, "5000000000000000000", { from: bob });
 
       expectEvent(result, "Approval", {
         owner: bob,
-        spender: pancakeProfile.address,
+        spender: sectaProfile.address,
         value: "5000000000000000000", // 5 CAKE
       });
     });
 
     it("Bob can finally create a profile and data is reflected as expected", async () => {
-      result = await pancakeProfile.createProfile("1", mockBunnies.address, "0", {
+      result = await sectaProfile.createProfile("1", mockBunnies.address, "0", {
         from: bob,
       });
 
@@ -208,27 +208,27 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       });
 
       // Team 1 has 1 user
-      result = await pancakeProfile.getTeamProfile("1");
+      result = await sectaProfile.getTeamProfile("1");
       assert.equal(result[2], "1");
 
       // Verify Bob's balance went down and allowance must be 0
       assert.equal(await mockCake.balanceOf(bob), "5000000000000000000");
-      assert.equal(await mockCake.allowance(bob, pancakeProfile.address), "0");
+      assert.equal(await mockCake.allowance(bob, sectaProfile.address), "0");
 
       // Verify that the mock NFT went to the contract
       assert.equal(await mockBunnies.balanceOf(bob), "0");
-      assert.equal(await mockBunnies.ownerOf("0"), pancakeProfile.address);
+      assert.equal(await mockBunnies.ownerOf("0"), sectaProfile.address);
 
       // Verify number of active profiles changed
-      assert.equal(await pancakeProfile.numberActiveProfiles(), "1");
+      assert.equal(await sectaProfile.numberActiveProfiles(), "1");
 
       // Verify Bob has registered
-      assert.equal(await pancakeProfile.hasRegistered(bob), true);
+      assert.equal(await sectaProfile.hasRegistered(bob), true);
     });
 
     it("Bob cannot register twice", async () => {
       await expectRevert(
-        pancakeProfile.createProfile("1", mockBunnies.address, "0", {
+        sectaProfile.createProfile("1", mockBunnies.address, "0", {
           from: bob,
         }),
         "Already registered"
@@ -238,7 +238,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
 
   describe("Logic to pause and reactivate a profile works as expected", async () => {
     it("Bob only can pause his profile", async () => {
-      result = await pancakeProfile.pauseProfile({
+      result = await sectaProfile.pauseProfile({
         from: bob,
       });
 
@@ -247,7 +247,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
         teamId: "1",
       });
 
-      result = await pancakeProfile.getUserStatus(bob);
+      result = await sectaProfile.getUserStatus(bob);
       assert.equal(result, false);
     });
 
@@ -257,17 +257,17 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       assert.equal(await mockBunnies.ownerOf("0"), bob);
 
       // Verify there is no more active user
-      assert.equal(await pancakeProfile.numberActiveProfiles(), "0");
+      assert.equal(await sectaProfile.numberActiveProfiles(), "0");
 
       // Verify the team has 0 active user
-      result = await pancakeProfile.getTeamProfile("1");
+      result = await sectaProfile.getTeamProfile("1");
       assert.equal(result[2], "0");
     });
 
     it("Bob cannot pause again/update while paused/register", async () => {
       // Bob cannot pause a profile twice
       await expectRevert(
-        pancakeProfile.pauseProfile({
+        sectaProfile.pauseProfile({
           from: bob,
         }),
         "User not active"
@@ -275,7 +275,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
 
       // Bob cannot update his own profile after it is paused
       await expectRevert(
-        pancakeProfile.updateProfile(mockBunnies.address, "0", {
+        sectaProfile.updateProfile(mockBunnies.address, "0", {
           from: bob,
         }),
         "User not active"
@@ -283,7 +283,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
 
       // Bob cannot re-register
       await expectRevert(
-        pancakeProfile.pauseProfile({
+        sectaProfile.pauseProfile({
           from: bob,
         }),
         "User not active"
@@ -292,27 +292,27 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
 
     it("Bob reactivates his profile", async () => {
       // Bob increases allowance for address
-      result = await mockCake.increaseAllowance(pancakeProfile.address, "5000000000000000000", { from: bob });
+      result = await mockCake.increaseAllowance(sectaProfile.address, "5000000000000000000", { from: bob });
 
       expectEvent(result, "Approval", {
         owner: bob,
-        spender: pancakeProfile.address,
+        spender: sectaProfile.address,
         value: "5000000000000000000", // 5 CAKE
       });
 
       // Bob approves the contract to receive his NFT
-      result = await mockBunnies.approve(pancakeProfile.address, "0", {
+      result = await mockBunnies.approve(sectaProfile.address, "0", {
         from: bob,
       });
 
       expectEvent(result, "Approval", {
         owner: bob,
-        approved: pancakeProfile.address,
+        approved: sectaProfile.address,
         tokenId: "0",
       });
 
       // Bob reactivates his profile
-      result = await pancakeProfile.reactivateProfile(mockBunnies.address, "0", {
+      result = await sectaProfile.reactivateProfile(mockBunnies.address, "0", {
         from: bob,
       });
 
@@ -324,18 +324,18 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       });
 
       // Verify there is one active user again
-      assert.equal(await pancakeProfile.numberActiveProfiles(), "1");
+      assert.equal(await sectaProfile.numberActiveProfiles(), "1");
       // Verify the team has 1 active user again
-      result = await pancakeProfile.getTeamProfile("1");
+      result = await sectaProfile.getTeamProfile("1");
       assert.equal(result[2], "1");
 
-      result = await pancakeProfile.getUserStatus(bob);
+      result = await sectaProfile.getUserStatus(bob);
       assert.equal(result, true);
     });
 
     it("Bob cannot reactivate his profile if active", async () => {
       await expectRevert(
-        pancakeProfile.reactivateProfile(mockBunnies.address, "0", {
+        sectaProfile.reactivateProfile(mockBunnies.address, "0", {
           from: bob,
         }),
         "User is active"
@@ -362,26 +362,26 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       assert.equal(await mockBunnies.totalSupply(), "3");
 
       // Carol approves NFTs to be spent
-      result = await mockBunnies.approve(pancakeProfile.address, "1", {
+      result = await mockBunnies.approve(sectaProfile.address, "1", {
         from: carol,
       });
 
       expectEvent(result, "Approval", {
         owner: carol,
-        approved: pancakeProfile.address,
+        approved: sectaProfile.address,
         tokenId: "1",
       });
 
       // Carol approves the CAKE token to be spent
       result = await mockCake.approve(
-        pancakeProfile.address,
+        sectaProfile.address,
         "100000000000000000000", // 100 CAKE
         { from: carol }
       );
 
       expectEvent(result, "Approval", {
         owner: carol,
-        spender: pancakeProfile.address,
+        spender: sectaProfile.address,
         value: "100000000000000000000", // 100 CAKE
       });
     });
@@ -389,7 +389,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
     it("Carol tries to spend the David's NFT", async () => {
       // Carol cannot spend the NFT of David WITHOUT his consent
       await expectRevert(
-        pancakeProfile.createProfile("1", mockBunnies.address, "2", {
+        sectaProfile.createProfile("1", mockBunnies.address, "2", {
           from: carol,
         }),
         "Only NFT owner can register"
@@ -408,7 +408,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
 
       // Carol cannot spend the NFT of David WITH his consent
       await expectRevert(
-        pancakeProfile.createProfile("1", mockBunnies.address, "2", {
+        sectaProfile.createProfile("1", mockBunnies.address, "2", {
           from: carol,
         }),
         "Only NFT owner can register"
@@ -416,7 +416,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
     });
 
     it("Carol creates a profile with her NFT", async () => {
-      result = await pancakeProfile.createProfile("1", mockBunnies.address, "1", { from: carol });
+      result = await sectaProfile.createProfile("1", mockBunnies.address, "1", { from: carol });
 
       expectEvent(result, "UserNew", {
         userAddress: carol,
@@ -428,17 +428,17 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
 
     it("David registers and all statuses are updated accordingly", async () => {
       // David activates his profile
-      await mockBunnies.approve(pancakeProfile.address, "2", {
+      await mockBunnies.approve(sectaProfile.address, "2", {
         from: david,
       });
 
       // David approves the CAKE token to be spent
       await mockCake.approve(
-        pancakeProfile.address,
+        sectaProfile.address,
         "10000000000000000000", // 10 CAKE
         { from: david }
       );
-      result = await pancakeProfile.createProfile("1", mockBunnies.address, "2", { from: david });
+      result = await sectaProfile.createProfile("1", mockBunnies.address, "2", { from: david });
 
       expectEvent(result, "UserNew", {
         userAddress: david,
@@ -447,9 +447,9 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
         tokenId: "2",
       });
 
-      result = await pancakeProfile.getTeamProfile("1");
+      result = await sectaProfile.getTeamProfile("1");
       assert.equal(result[2], "3");
-      assert.equal(await pancakeProfile.numberActiveProfiles(), "3");
+      assert.equal(await sectaProfile.numberActiveProfiles(), "3");
     });
   });
 
@@ -467,7 +467,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
 
     it("Carol cannot update her profile until it is approved", async () => {
       await expectRevert(
-        pancakeProfile.updateProfile(mockCats.address, "1", {
+        sectaProfile.updateProfile(mockCats.address, "1", {
           from: carol,
         }),
         "NFT address invalid"
@@ -475,7 +475,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
     });
 
     it("Carol pauses her profile and tries to reactivate with new NFT", async () => {
-      result = await pancakeProfile.pauseProfile({
+      result = await sectaProfile.pauseProfile({
         from: carol,
       });
 
@@ -485,18 +485,18 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       });
 
       // Carol approves NFT to be spent by
-      await mockBunnies.approve(pancakeProfile.address, "1", {
+      await mockBunnies.approve(sectaProfile.address, "1", {
         from: carol,
       });
 
       await expectRevert(
-        pancakeProfile.reactivateProfile(mockCats.address, "1", {
+        sectaProfile.reactivateProfile(mockCats.address, "1", {
           from: carol,
         }),
         "NFT address invalid"
       );
 
-      result = await pancakeProfile.reactivateProfile(mockBunnies.address, "1", {
+      result = await sectaProfile.reactivateProfile(mockBunnies.address, "1", {
         from: carol,
       });
 
@@ -510,7 +510,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
 
     it("Alice approves a new NFT contract", async () => {
       // Alice adds the new NFT contract as supported
-      result = await pancakeProfile.addNftAddress(mockCats.address, {
+      result = await sectaProfile.addNftAddress(mockCats.address, {
         from: alice,
       });
 
@@ -522,7 +522,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
     });
 
     it("Carol pauses her profile and tries to reactivate with Erin's NFT", async () => {
-      result = await pancakeProfile.pauseProfile({
+      result = await sectaProfile.pauseProfile({
         from: carol,
       });
 
@@ -537,18 +537,18 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       });
 
       await expectRevert(
-        pancakeProfile.reactivateProfile(mockCats.address, "0", {
+        sectaProfile.reactivateProfile(mockCats.address, "0", {
           from: carol,
         }),
         "Only NFT owner can update"
       );
 
       // Carol approves NFT to be spent by
-      await mockCats.approve(pancakeProfile.address, "1", {
+      await mockCats.approve(sectaProfile.address, "1", {
         from: carol,
       });
 
-      result = await pancakeProfile.reactivateProfile(mockCats.address, "1", {
+      result = await sectaProfile.reactivateProfile(mockCats.address, "1", {
         from: carol,
       });
 
@@ -567,7 +567,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       });
 
       await expectRevert(
-        pancakeProfile.updateProfile(mockCats.address, "0", {
+        sectaProfile.updateProfile(mockCats.address, "0", {
           from: carol,
         }),
         "Only NFT owner can update"
@@ -580,20 +580,20 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
         await mockCake.mintTokens("2000000000000000000", { from: erin });
       }
 
-      // Erin approves her NFT contract to be spent by PancakeProfile
-      await mockCats.approve(pancakeProfile.address, "0", {
+      // Erin approves her NFT contract to be spent by SectaProfile
+      await mockCats.approve(sectaProfile.address, "0", {
         from: erin,
       });
 
-      // Erin approves the CAKE token to be spent by PancakeProfile
+      // Erin approves the CAKE token to be spent by SectaProfile
       await mockCake.approve(
-        pancakeProfile.address,
+        sectaProfile.address,
         "10000000000000000000", // 10 CAKE
         { from: erin }
       );
 
-      // Erin creates her Pancake profile
-      result = await pancakeProfile.createProfile("1", mockCats.address, "0", {
+      // Erin creates her Secta profile
+      result = await sectaProfile.createProfile("1", mockCats.address, "0", {
         from: erin,
       });
 
@@ -604,27 +604,27 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
         tokenId: "0",
       });
 
-      assert.equal(await pancakeProfile.numberActiveProfiles(), "4");
-      assert.equal(await pancakeProfile.numberTeams(), "1");
+      assert.equal(await sectaProfile.numberActiveProfiles(), "4");
+      assert.equal(await sectaProfile.numberTeams(), "1");
     });
 
     it("Frank cannot call functions without a profiles", async () => {
       await expectRevert(
-        pancakeProfile.pauseProfile({
+        sectaProfile.pauseProfile({
           from: frank,
         }),
         "Has not registered"
       );
 
       await expectRevert(
-        pancakeProfile.updateProfile(mockCats.address, "0", {
+        sectaProfile.updateProfile(mockCats.address, "0", {
           from: frank,
         }),
         "Has not registered"
       );
 
       await expectRevert(
-        pancakeProfile.reactivateProfile(mockCats.address, "0", {
+        sectaProfile.reactivateProfile(mockCats.address, "0", {
           from: frank,
         }),
         "Has not registered"
@@ -635,7 +635,7 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       // Erin mints a token for MockBunnies
       await mockBunnies.mint({ from: erin });
 
-      result = await pancakeProfile.getUserProfile(erin);
+      result = await sectaProfile.getUserProfile(erin);
       assert.equal(result[0], "4");
       assert.equal(result[1], "0");
       assert.equal(result[2], "1");
@@ -644,15 +644,15 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       assert.equal(result[5], true);
 
       // Verify the number of users in team 1 is 4
-      result = await pancakeProfile.getTeamProfile("1");
+      result = await sectaProfile.getTeamProfile("1");
       assert.equal(result[2], "4");
 
-      // Erin approves her NFT contract to be spent by PancakeProfile
-      await mockBunnies.approve(pancakeProfile.address, "3", {
+      // Erin approves her NFT contract to be spent by SectaProfile
+      await mockBunnies.approve(sectaProfile.address, "3", {
         from: erin,
       });
 
-      result = await pancakeProfile.updateProfile(mockBunnies.address, "3", {
+      result = await sectaProfile.updateProfile(mockBunnies.address, "3", {
         from: erin,
       });
 
@@ -665,28 +665,28 @@ contract("User interactions", ([alice, bob, carol, david, erin, frank]) => {
       // Balance checks
       assert.equal(await mockCake.balanceOf(erin), "3000000000000000000");
       assert.equal(await mockBunnies.balanceOf(erin), "0");
-      assert.equal(await mockBunnies.ownerOf("3"), pancakeProfile.address);
-      assert.equal(await mockBunnies.balanceOf(pancakeProfile.address), "3");
+      assert.equal(await mockBunnies.ownerOf("3"), sectaProfile.address);
+      assert.equal(await mockBunnies.balanceOf(sectaProfile.address), "3");
       assert.equal(await mockCats.balanceOf(erin), "1");
-      assert.equal(await mockCats.balanceOf(pancakeProfile.address), "1");
+      assert.equal(await mockCats.balanceOf(sectaProfile.address), "1");
       assert.equal(await mockCats.ownerOf("0"), erin);
 
       // Checking Erin's profile reflects the changes
-      result = await pancakeProfile.getUserProfile(erin);
+      result = await sectaProfile.getUserProfile(erin);
       assert.equal(result[3], mockBunnies.address);
       assert.equal(result[4], "3");
     });
 
     it("Tests for view functions", async () => {
-      result = await pancakeProfile.getUserProfile(erin);
+      result = await sectaProfile.getUserProfile(erin);
       assert.equal(result[3], mockBunnies.address);
       assert.equal(result[4], "3");
 
       // Frank has no profile
-      await expectRevert(pancakeProfile.getUserProfile(frank), "Not registered");
+      await expectRevert(sectaProfile.getUserProfile(frank), "Not registered");
 
       // teamId doesn't exist
-      await expectRevert(pancakeProfile.getTeamProfile("5"), "teamId invalid");
+      await expectRevert(sectaProfile.getTeamProfile("5"), "teamId invalid");
     });
   });
 });

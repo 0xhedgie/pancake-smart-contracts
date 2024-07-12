@@ -19,30 +19,30 @@ const main = async () => {
     }
   }
 
-  if (!config.PancakeRouter[networkName] || config.PancakeRouter[networkName] === ethers.constants.AddressZero) {
+  if (!config.SectaRouter[networkName] || config.SectaRouter[networkName] === ethers.constants.AddressZero) {
     throw new Error("Missing router address, refer to README 'Deployment' section");
   }
 
-  if (!config.WBNB[networkName] || config.WBNB[networkName] === ethers.constants.AddressZero) {
-    throw new Error("Missing WBNB address, refer to README 'Deployment' section");
+  if (!config.WETH[networkName] || config.WETH[networkName] === ethers.constants.AddressZero) {
+    throw new Error("Missing WETH address, refer to README 'Deployment' section");
   }
 
   console.log("Deploying to network:", networkName);
 
-  // Deploy PancakeZapV1
-  console.log("Deploying PancakeZap V1..");
+  // Deploy SectaZapV1
+  console.log("Deploying SectaZap V1..");
 
-  const PancakeZapV1 = await ethers.getContractFactory("PancakeZapV1");
+  const SectaZapV1 = await ethers.getContractFactory("SectaZapV1");
 
-  const pancakeZap = await PancakeZapV1.deploy(
-    config.WBNB[networkName],
-    config.PancakeRouter[networkName],
+  const sectaZap = await SectaZapV1.deploy(
+    config.WETH[networkName],
+    config.SectaRouter[networkName],
     config.MaxZapReverseRatio[networkName]
   );
 
-  await pancakeZap.deployed();
+  await sectaZap.deployed();
 
-  console.log("PancakeZap V1 deployed to:", pancakeZap.address);
+  console.log("SectaZap V1 deployed to:", sectaZap.address);
 };
 
 main()

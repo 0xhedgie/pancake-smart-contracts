@@ -2,5 +2,7 @@
 projects/**/coverage/
 
 # Project
-projects/bsc-library/
 projects/exchange-protocol/
+
+projects/cake-vault/
+projects/profile-nft-gamification/

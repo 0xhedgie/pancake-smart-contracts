@@ -3,7 +3,7 @@ import { BN, expectEvent, expectRevert, time } from "@openzeppelin/test-helpers"
 import { artifacts, contract } from "hardhat";
 import { parseEther } from "ethers/lib/utils";
 
-const MockBEP20 = artifacts.require("./utils/MockBEP20.sol");
+const MockERC20 = artifacts.require("./utils/MockERC20.sol");
 const MockBunnies = artifacts.require("./utils/MockBunnies.sol");
 const AnniversaryAchievement = artifacts.require("./AnniversaryAchievement.sol");
 const BunnyFactoryV2 = artifacts.require("./old/BunnyFactoryV2.sol");
@@ -13,13 +13,13 @@ const BunnySpecialV2 = artifacts.require("./BunnySpecialV2.sol");
 const BunnyCakeVault = artifacts.require("./BunnySpecialCakeVault.sol");
 const BunnyPrediction = artifacts.require("./BunnySpecialPrediction.sol");
 const BunnyMintingStation = artifacts.require("./BunnyMintingStation.sol");
-const PancakeBunnies = artifacts.require("./PancakeBunnies.sol");
-const PancakeProfile = artifacts.require("./PancakeProfile.sol");
+const SectaBunnies = artifacts.require("./SectaBunnies.sol");
+const SectaProfile = artifacts.require("./SectaProfile.sol");
 const BunnySpecialLottery = artifacts.require("./BunnySpecialLottery.sol");
 const BunnySpecialAdmin = artifacts.require("./BunnySpecialAdmin.sol");
 
 // CAKE VAULT
-const CakeVault = artifacts.require("pancake-cake-vault/contracts/CakeVault.sol");
+const CakeVault = artifacts.require("secta-cake-vault/contracts/CakeVault.sol");
 const CakeToken = artifacts.require("./test/CakeToken.sol");
 const SyrupBar = artifacts.require("./test/SyrupBar.sol");
 const MasterChef = artifacts.require("./test/MasterChef.sol");
@@ -29,7 +29,7 @@ const BnbPricePrediction = artifacts.require("predictions/contracts/BnbPricePred
 const MockAggregatorV3 = artifacts.require("test/MockAggregatorV3.sol");
 
 // LOTTERY
-const MockPancakeSwapLottery = artifacts.require("test/MockPancakeSwapLottery.sol");
+const MockSectaFiLottery = artifacts.require("test/MockSectaFiLottery.sol");
 
 contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) => {
   let anniversaryAchievement;
@@ -39,8 +39,8 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
   let bunnySpecialV1;
   let bunnySpecialV2;
   let mockCAKE;
-  let pancakeBunnies;
-  let pancakeProfile;
+  let sectaBunnies;
+  let sectaProfile;
   let mockBunnies;
 
   let vault;
@@ -54,7 +54,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
   let mockAggregatorV3;
   let bunnyPrediction;
 
-  let pancakeSwapLottery;
+  let sectaFiLottery;
   let bunnySpecialLottery;
 
   let bunnySpecialAdmin;
@@ -72,20 +72,20 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
   const _startBlockNumberV2 = "1";
   const _startBlockNumberV3 = "1000";
 
-  // PancakeSwap Profile related.
+  // SectaFi Profile related.
   const _numberPoints = 100;
   const _campaignId = "123456789";
 
   before(async () => {
-    mockCAKE = await MockBEP20.new("Pancake Mock Token", "CAKE", 0, {
+    mockCAKE = await MockERC20.new("Secta Mock Token", "CAKE", 0, {
       from: alice,
     });
 
-    pancakeBunnies = await PancakeBunnies.new("ipfs://", { from: alice });
+    sectaBunnies = await SectaBunnies.new("ipfs://", { from: alice });
 
     // Deploy V2
     bunnyFactoryV2 = await BunnyFactoryV2.new(
-      pancakeBunnies.address,
+      sectaBunnies.address,
       mockCAKE.address,
       _tokenPrice,
       _ipfsHash,
@@ -95,7 +95,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
     );
 
     // Transfer ownership to V2
-    await pancakeBunnies.transferOwnership(bunnyFactoryV2.address, {
+    await sectaBunnies.transferOwnership(bunnyFactoryV2.address, {
       from: alice,
     });
 
@@ -115,7 +115,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
     await bunnyFactoryV2.mintNFT("6", { from: alice });
 
-    bunnyMintingStation = await BunnyMintingStation.new(pancakeBunnies.address);
+    bunnyMintingStation = await BunnyMintingStation.new(sectaBunnies.address);
 
     bunnyFactoryV3 = await BunnyFactoryV3.new(
       bunnyFactoryV2.address,
@@ -162,17 +162,17 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
     // LOTTERY
     mockBunnies = await MockBunnies.new({ from: alice });
-    pancakeSwapLottery = await MockPancakeSwapLottery.new(cake.address);
+    sectaFiLottery = await MockSectaFiLottery.new(cake.address);
   });
 
   describe("All new contracts are deployed correctly", async () => {
     it("Symbol and names are correct", async () => {
-      assert.equal(await pancakeBunnies.symbol(), "PB");
-      assert.equal(await pancakeBunnies.name(), "Pancake Bunnies");
+      assert.equal(await sectaBunnies.symbol(), "PB");
+      assert.equal(await sectaBunnies.name(), "Secta Bunnies");
     });
 
     it("Owners & roles are ok", async () => {
-      assert.equal(await pancakeBunnies.owner(), bunnyMintingStation.address);
+      assert.equal(await sectaBunnies.owner(), bunnyMintingStation.address);
       assert.equal(await bunnyFactoryV3.owner(), alice);
       assert.equal(await bunnyFactoryV3.canMint(alice), false);
       assert.equal(await bunnyFactoryV3.canMint(bob), true);
@@ -200,7 +200,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
       await expectRevert(bunnyFactoryV3.mintNFT(10, { from: bob }), "bunnyId too high");
 
-      await expectRevert(bunnyFactoryV3.mintNFT(5, { from: bob }), "BEP20: transfer amount exceeds balance");
+      await expectRevert(bunnyFactoryV3.mintNFT(5, { from: bob }), "ERC20: transfer amount exceeds balance");
 
       await mockCAKE.mintTokens("100000000000000000000", { from: bob });
 
@@ -248,8 +248,8 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       assert.equal(await bunnyFactoryV3.canMint(bob), false);
       assert.equal(await bunnyFactoryV3.hasClaimed(bob), true);
 
-      assert.equal(await pancakeBunnies.totalSupply(), "2");
-      assert.equal(await pancakeBunnies.tokenURI(1), "ipfs://test/test9.json");
+      assert.equal(await sectaBunnies.totalSupply(), "2");
+      assert.equal(await sectaBunnies.tokenURI(1), "ipfs://test/test9.json");
     });
 
     it("Bob cannot claim twice", async () => {
@@ -293,8 +293,8 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
       assert.equal(result.toString(), "95000000000000000000"); // 95 CAKE
 
-      assert.equal(await pancakeBunnies.totalSupply(), "3");
-      assert.equal(await pancakeBunnies.tokenURI(2), "ipfs://test/test6.json");
+      assert.equal(await sectaBunnies.totalSupply(), "3");
+      assert.equal(await sectaBunnies.tokenURI(2), "ipfs://test/test6.json");
     });
 
     it("Alice claims CAKE fees", async () => {
@@ -362,17 +362,17 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       );
     });
 
-    it("Alice can transfer ownership of PancakeBunnies", async () => {
+    it("Alice can transfer ownership of SectaBunnies", async () => {
       result = await bunnyMintingStation.changeOwnershipNFTContract(alice, {
         from: alice,
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, pancakeBunnies, "OwnershipTransferred", {
+      expectEvent.inTransaction(result.receipt.transactionHash, sectaBunnies, "OwnershipTransferred", {
         previousOwner: bunnyMintingStation.address,
         newOwner: alice,
       });
 
-      assert.equal(await pancakeBunnies.owner(), alice);
+      assert.equal(await sectaBunnies.owner(), alice);
     });
 
     it("Alice cannot mint anymore since she minted in V2", async () => {
@@ -389,7 +389,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
     });
 
     it("Alice transfers ownership back to BunnyMintingStation", async () => {
-      result = await pancakeBunnies.transferOwnership(bunnyMintingStation.address, {
+      result = await sectaBunnies.transferOwnership(bunnyMintingStation.address, {
         from: alice,
       });
 
@@ -398,16 +398,16 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         newOwner: bunnyMintingStation.address,
       });
 
-      assert.equal(await pancakeBunnies.owner(), bunnyMintingStation.address);
+      assert.equal(await sectaBunnies.owner(), bunnyMintingStation.address);
     });
   });
   describe("BunnySpecialV1", async () => {
-    it("Alice deploys PancakeProfile and Bob creates a profile", async () => {
+    it("Alice deploys SectaProfile and Bob creates a profile", async () => {
       const _numberCakeToReactivate = parseEther("2"); // 2 CAKE
       const _numberCakeToRegister = parseEther("1"); // 1 CAKE
       const _numberCakeToUpdate = parseEther("2"); // 2 CAKE
 
-      pancakeProfile = await PancakeProfile.new(
+      sectaProfile = await SectaProfile.new(
         mockCAKE.address,
         _numberCakeToReactivate,
         _numberCakeToRegister,
@@ -415,26 +415,26 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         { from: alice }
       );
 
-      // PancakeSwap Profile roles.
-      POINT_ROLE = await pancakeProfile.POINT_ROLE();
+      // SectaFi Profile roles.
+      POINT_ROLE = await sectaProfile.POINT_ROLE();
 
-      await pancakeProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
+      await sectaProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
         from: alice,
       });
 
-      await pancakeProfile.addNftAddress(pancakeBunnies.address, {
+      await sectaProfile.addNftAddress(sectaBunnies.address, {
         from: alice,
       });
 
-      await pancakeBunnies.approve(pancakeProfile.address, "1", {
+      await sectaBunnies.approve(sectaProfile.address, "1", {
         from: bob,
       });
 
-      await mockCAKE.approve(pancakeProfile.address, parseEther("500"), {
+      await mockCAKE.approve(sectaProfile.address, parseEther("500"), {
         from: bob,
       });
 
-      await pancakeProfile.createProfile("1", pancakeBunnies.address, "1", {
+      await sectaProfile.createProfile("1", sectaBunnies.address, "1", {
         from: bob,
       });
     });
@@ -443,7 +443,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       bunnySpecialV1 = await BunnySpecialV1.new(
         bunnyMintingStation.address,
         mockCAKE.address,
-        pancakeProfile.address,
+        sectaProfile.address,
         "10",
         { from: alice }
       );
@@ -460,7 +460,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
     it("Alice adds a new bunnyId", async () => {
       await bunnyMintingStation.setBunnyName("10", "Hiccup", { from: alice });
-      assert.equal(await pancakeBunnies.getBunnyName("10"), "Hiccup");
+      assert.equal(await sectaBunnies.getBunnyName("10"), "Hiccup");
       result = await bunnySpecialV1.addBunny(10, "hash/hiccup.json", 2, 0, {
         from: alice,
       });
@@ -515,8 +515,8 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         bunnyId: "10",
       });
 
-      assert.equal(await pancakeBunnies.tokenURI("3"), "ipfs://hash/hiccup.json");
-      assert.equal(await pancakeBunnies.getBunnyNameOfTokenId("3"), "Hiccup");
+      assert.equal(await sectaBunnies.tokenURI("3"), "ipfs://hash/hiccup.json");
+      assert.equal(await sectaBunnies.getBunnyNameOfTokenId("3"), "Hiccup");
       assert.equal(await bunnySpecialV1.canClaimSingle(bob, "10"), false);
     });
 
@@ -529,17 +529,17 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
     });
 
     it("Carol creates a profile but is below threshold", async () => {
-      await pancakeBunnies.approve(pancakeProfile.address, "2", {
+      await sectaBunnies.approve(sectaProfile.address, "2", {
         from: carol,
       });
 
-      await mockCAKE.approve(pancakeProfile.address, parseEther("500"), {
+      await mockCAKE.approve(sectaProfile.address, parseEther("500"), {
         from: carol,
       });
 
       assert.equal(await bunnySpecialV1.canClaimSingle(carol, "10"), false);
 
-      await pancakeProfile.createProfile("1", pancakeBunnies.address, "2", {
+      await sectaProfile.createProfile("1", sectaBunnies.address, "2", {
         from: carol,
       });
 
@@ -559,7 +559,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
     });
 
     it("Carol pauses her profile and cannot claim bunny", async () => {
-      await pancakeProfile.pauseProfile({ from: carol });
+      await sectaProfile.pauseProfile({ from: carol });
 
       assert.equal(await bunnySpecialV1.canClaimSingle(carol, "10"), false);
 
@@ -569,11 +569,11 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
     });
 
     it("Alice makes bunnyId=10 inactive while Carol re-activates her profile", async () => {
-      await pancakeBunnies.approve(pancakeProfile.address, "2", {
+      await sectaBunnies.approve(sectaProfile.address, "2", {
         from: carol,
       });
 
-      await pancakeProfile.reactivateProfile(pancakeBunnies.address, "2", {
+      await sectaProfile.reactivateProfile(sectaBunnies.address, "2", {
         from: carol,
       });
 
@@ -615,7 +615,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
       assert.equal(await bunnySpecialV1.canClaimSingle(carol, "10"), true);
 
-      await expectRevert(bunnySpecialV1.mintNFT(10, { from: carol }), "BEP20: transfer amount exceeds allowance");
+      await expectRevert(bunnySpecialV1.mintNFT(10, { from: carol }), "ERC20: transfer amount exceeds allowance");
     });
 
     it("Carol approves the contract to spend CAKE and mints", async () => {
@@ -625,8 +625,8 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
       await bunnySpecialV1.mintNFT(10, { from: carol });
 
-      assert.equal(await pancakeBunnies.tokenURI("4"), "ipfs://hash/hiccup.json");
-      assert.equal(await pancakeBunnies.getBunnyNameOfTokenId("4"), "Hiccup");
+      assert.equal(await sectaBunnies.tokenURI("4"), "ipfs://hash/hiccup.json");
+      assert.equal(await sectaBunnies.getBunnyNameOfTokenId("4"), "Hiccup");
       assert.equal(await bunnySpecialV1.canClaimSingle(carol, "10"), false);
       assert.equal(await mockCAKE.balanceOf(bunnySpecialV1.address), "88");
     });
@@ -641,7 +641,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         from: alice,
       });
 
-      assert.equal(await pancakeBunnies.getBunnyName("11"), "Bullish");
+      assert.equal(await sectaBunnies.getBunnyName("11"), "Bullish");
 
       // It already exists
       await expectRevert(
@@ -720,7 +720,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       bunnySpecialV2 = await BunnySpecialV2.new(
         bunnyMintingStation.address,
         mockCAKE.address,
-        pancakeProfile.address,
+        sectaProfile.address,
         _thresholdUserS2,
         _endBlockNumberS2,
         { from: alice }
@@ -795,18 +795,18 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
     it("Carol cannot mint without an active profile", async () => {
       assert.equal(await bunnySpecialV2.canClaim(carol), true);
 
-      await pancakeProfile.pauseProfile({ from: carol });
+      await sectaProfile.pauseProfile({ from: carol });
       await expectRevert(bunnySpecialV2.mintNFT({ from: carol }), "ERR_USER_NOT_ACTIVE");
 
       assert.equal(await bunnySpecialV2.canClaim(carol), false);
     });
 
     it("Carol can mint with an active profile", async () => {
-      await pancakeBunnies.approve(pancakeProfile.address, "2", {
+      await sectaBunnies.approve(sectaProfile.address, "2", {
         from: carol,
       });
 
-      await pancakeProfile.reactivateProfile(pancakeBunnies.address, "2", {
+      await sectaProfile.reactivateProfile(sectaBunnies.address, "2", {
         from: carol,
       });
 
@@ -855,15 +855,15 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         bunnyId: "9",
       });
 
-      await pancakeBunnies.approve(pancakeProfile.address, "7", {
+      await sectaBunnies.approve(sectaProfile.address, "7", {
         from: david,
       });
 
-      await mockCAKE.approve(pancakeProfile.address, parseEther("100"), {
+      await mockCAKE.approve(sectaProfile.address, parseEther("100"), {
         from: david,
       });
 
-      await pancakeProfile.createProfile("1", pancakeBunnies.address, "7", {
+      await sectaProfile.createProfile("1", sectaBunnies.address, "7", {
         from: david,
       });
 
@@ -901,7 +901,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       bunnyCakeVault = await BunnyCakeVault.new(
         vault.address,
         bunnyMintingStation.address,
-        pancakeProfile.address,
+        sectaProfile.address,
         _endBlockNumberS3,
         _thresholdTimestampS3,
         _numberPoints,
@@ -911,7 +911,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       );
 
       // Grants point role to the new contract
-      result = await pancakeProfile.grantRole(POINT_ROLE, bunnyCakeVault.address, {
+      result = await sectaProfile.grantRole(POINT_ROLE, bunnyCakeVault.address, {
         from: alice,
       });
 
@@ -947,7 +947,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         bunnyId: "16",
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease", {
+      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
         userAddress: bob,
         numberPoints: String(_numberPoints),
         campaignId: String(_campaignId),
@@ -972,18 +972,18 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
       assert.equal(await bunnyCakeVault.canClaim(carol), true);
 
-      await pancakeProfile.pauseProfile({ from: carol });
+      await sectaProfile.pauseProfile({ from: carol });
       await expectRevert(bunnyCakeVault.mintNFT({ from: carol }), "ERR_USER_NOT_ACTIVE");
 
       assert.equal(await bunnyCakeVault.canClaim(carol), false);
     });
 
     it("Carol can mint with an active profile", async () => {
-      await pancakeBunnies.approve(pancakeProfile.address, "2", {
+      await sectaBunnies.approve(sectaProfile.address, "2", {
         from: carol,
       });
 
-      await pancakeProfile.reactivateProfile(pancakeBunnies.address, "2", {
+      await sectaProfile.reactivateProfile(sectaBunnies.address, "2", {
         from: carol,
       });
 
@@ -997,7 +997,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         bunnyId: "16",
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease", {
+      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
         userAddress: carol,
         numberPoints: String(_numberPoints),
         campaignId: String(_campaignId),
@@ -1024,15 +1024,15 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         bunnyId: "9",
       });
 
-      await pancakeBunnies.approve(pancakeProfile.address, "10", {
+      await sectaBunnies.approve(sectaProfile.address, "10", {
         from: frank,
       });
 
-      await mockCAKE.approve(pancakeProfile.address, parseEther("100"), {
+      await mockCAKE.approve(sectaProfile.address, parseEther("100"), {
         from: frank,
       });
 
-      await pancakeProfile.createProfile("1", pancakeBunnies.address, "10", {
+      await sectaProfile.createProfile("1", sectaBunnies.address, "10", {
         from: frank,
       });
 
@@ -1145,7 +1145,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       bunnyPrediction = await BunnyPrediction.new(
         prediction.address,
         bunnyMintingStation.address,
-        pancakeProfile.address,
+        sectaProfile.address,
         _endBlockNumberS4,
         1,
         _numberPoints,
@@ -1155,7 +1155,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       );
 
       // Grants point role to the new contract
-      result = await pancakeProfile.grantRole(POINT_ROLE, bunnyPrediction.address, {
+      result = await sectaProfile.grantRole(POINT_ROLE, bunnyPrediction.address, {
         from: alice,
       });
 
@@ -1194,7 +1194,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         bunnyId: "17",
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease", {
+      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
         userAddress: bob,
         numberPoints: String(_numberPoints),
         campaignId: String(_campaignId),
@@ -1219,7 +1219,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
       assert.equal(await bunnyPrediction.canClaim(carol), true);
 
-      await pancakeProfile.pauseProfile({ from: carol });
+      await sectaProfile.pauseProfile({ from: carol });
 
       await expectRevert(bunnyPrediction.mintNFT({ from: carol }), "ERR_USER_NOT_ACTIVE");
 
@@ -1227,11 +1227,11 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
     });
 
     it("Carol can mint with an active profile", async () => {
-      await pancakeBunnies.approve(pancakeProfile.address, "2", {
+      await sectaBunnies.approve(sectaProfile.address, "2", {
         from: carol,
       });
 
-      await pancakeProfile.reactivateProfile(pancakeBunnies.address, "2", {
+      await sectaProfile.reactivateProfile(sectaBunnies.address, "2", {
         from: carol,
       });
 
@@ -1245,7 +1245,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         bunnyId: "17",
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease", {
+      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
         userAddress: carol,
         numberPoints: String(_numberPoints),
         campaignId: String(_campaignId),
@@ -1272,15 +1272,15 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         bunnyId: "9",
       });
 
-      await pancakeBunnies.approve(pancakeProfile.address, "13", {
+      await sectaBunnies.approve(sectaProfile.address, "13", {
         from: eve,
       });
 
-      await mockCAKE.approve(pancakeProfile.address, parseEther("100"), {
+      await mockCAKE.approve(sectaProfile.address, parseEther("100"), {
         from: eve,
       });
 
-      await pancakeProfile.createProfile("1", pancakeBunnies.address, "13", {
+      await sectaProfile.createProfile("1", sectaBunnies.address, "13", {
         from: eve,
       });
 
@@ -1405,7 +1405,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       const _numberCakeToRegister = parseEther("1"); // 1 CAKE
       const _numberCakeToUpdate = parseEther("2"); // 2 CAKE
 
-      pancakeProfile = await PancakeProfile.new(
+      sectaProfile = await SectaProfile.new(
         mockCAKE.address,
         _numberCakeToReactivate,
         _numberCakeToRegister,
@@ -1413,59 +1413,59 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         { from: alice }
       );
 
-      // PancakeSwap Profile roles.
-      POINT_ROLE = await pancakeProfile.POINT_ROLE();
-      await pancakeProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
+      // SectaFi Profile roles.
+      POINT_ROLE = await sectaProfile.POINT_ROLE();
+      await sectaProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
         from: alice,
       });
-      await pancakeProfile.addNftAddress(mockBunnies.address, {
+      await sectaProfile.addNftAddress(mockBunnies.address, {
         from: alice,
       });
 
       // Bob's profile
       await mockBunnies.mint({ from: bob });
       const bobProfileNftId = "0";
-      await mockBunnies.approve(pancakeProfile.address, bobProfileNftId, {
+      await mockBunnies.approve(sectaProfile.address, bobProfileNftId, {
         from: bob,
       });
-      await mockCAKE.approve(pancakeProfile.address, parseEther("500"), {
+      await mockCAKE.approve(sectaProfile.address, parseEther("500"), {
         from: bob,
       });
-      await pancakeProfile.createProfile("1", mockBunnies.address, bobProfileNftId, {
+      await sectaProfile.createProfile("1", mockBunnies.address, bobProfileNftId, {
         from: bob,
       });
 
       // Carol's profile
       await mockBunnies.mint({ from: carol });
       const carolProfileNftId = "1";
-      await mockBunnies.approve(pancakeProfile.address, carolProfileNftId, {
+      await mockBunnies.approve(sectaProfile.address, carolProfileNftId, {
         from: carol,
       });
-      await mockCAKE.approve(pancakeProfile.address, parseEther("500"), {
+      await mockCAKE.approve(sectaProfile.address, parseEther("500"), {
         from: carol,
       });
-      await pancakeProfile.createProfile("1", mockBunnies.address, carolProfileNftId, {
+      await sectaProfile.createProfile("1", mockBunnies.address, carolProfileNftId, {
         from: carol,
       });
 
       // David's profile
       await mockBunnies.mint({ from: david });
       const davidProfileNftId = "2";
-      await mockBunnies.approve(pancakeProfile.address, davidProfileNftId, {
+      await mockBunnies.approve(sectaProfile.address, davidProfileNftId, {
         from: david,
       });
-      await mockCAKE.approve(pancakeProfile.address, parseEther("500"), {
+      await mockCAKE.approve(sectaProfile.address, parseEther("500"), {
         from: david,
       });
-      await pancakeProfile.createProfile("1", mockBunnies.address, davidProfileNftId, {
+      await sectaProfile.createProfile("1", mockBunnies.address, davidProfileNftId, {
         from: david,
       });
 
       // Lottery setup
       bunnySpecialLottery = await BunnySpecialLottery.new(
-        pancakeSwapLottery.address,
+        sectaFiLottery.address,
         bunnyMintingStation.address,
-        pancakeProfile.address,
+        sectaProfile.address,
         currentBlockNumber + 10000,
         "bunnyLottery1.json",
         "bunnyLottery2.json",
@@ -1481,7 +1481,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       );
 
       // Grants point role to the new contract
-      result = await pancakeProfile.grantRole(POINT_ROLE, bunnySpecialLottery.address, {
+      result = await sectaProfile.grantRole(POINT_ROLE, bunnySpecialLottery.address, {
         from: alice,
       });
       expectEvent(result, "RoleGranted", {
@@ -1499,14 +1499,14 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         sender: alice,
       });
 
-      await pancakeSwapLottery.setOperatorAndTreasuryAndInjectorAddresses(alice, alice, alice, { from: alice });
+      await sectaFiLottery.setOperatorAndTreasuryAndInjectorAddresses(alice, alice, alice, { from: alice });
 
       const _lengthLottery = new BN("60"); // In Sec
       const _priceTicketInCake = parseEther("0.1");
       const _discountDivisor = "2000";
       const _rewardsBreakdown = ["200", "300", "500", "1500", "2500", "5000"];
       const _treasuryFee = "2000";
-      await pancakeSwapLottery.startLottery(
+      await sectaFiLottery.startLottery(
         new BN(await time.latest()).add(_lengthLottery),
         _priceTicketInCake,
         _discountDivisor,
@@ -1519,14 +1519,14 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       // carol played
       // david won
       // frank won without a profile
-      await pancakeSwapLottery.buyTickets(LOTTERY_ID, [1634660, 1999998], { from: carol });
-      await pancakeSwapLottery.buyTickets(LOTTERY_ID, [1634660, 1999999], { from: david });
-      await pancakeSwapLottery.buyTickets(LOTTERY_ID, [1999999], { from: frank });
+      await sectaFiLottery.buyTickets(LOTTERY_ID, [1634660, 1999998], { from: carol });
+      await sectaFiLottery.buyTickets(LOTTERY_ID, [1634660, 1999999], { from: david });
+      await sectaFiLottery.buyTickets(LOTTERY_ID, [1999999], { from: frank });
 
-      await pancakeSwapLottery.closeLottery(LOTTERY_ID, { from: alice });
-      await pancakeSwapLottery.drawFinalNumberAndMakeLotteryClaimable(LOTTERY_ID, true, { from: alice });
-      await pancakeSwapLottery.claimTickets(LOTTERY_ID, ["3"], ["5"], { from: david });
-      await pancakeSwapLottery.claimTickets(LOTTERY_ID, ["4"], ["5"], { from: frank });
+      await sectaFiLottery.closeLottery(LOTTERY_ID, { from: alice });
+      await sectaFiLottery.drawFinalNumberAndMakeLotteryClaimable(LOTTERY_ID, true, { from: alice });
+      await sectaFiLottery.claimTickets(LOTTERY_ID, ["3"], ["5"], { from: david });
+      await sectaFiLottery.claimTickets(LOTTERY_ID, ["4"], ["5"], { from: frank });
     });
 
     it("Owner can whitelist for NFT3", async () => {
@@ -1782,7 +1782,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
         bunnyId: "21",
       });
 
-      assert.equal(await pancakeBunnies.tokenURI("18"), "ipfs://bunnyAdmin.json");
+      assert.equal(await sectaBunnies.tokenURI("18"), "ipfs://bunnyAdmin.json");
       assert.equal(await bunnySpecialAdmin.canClaim(bob), false);
       assert.equal(await bunnySpecialAdmin.hasClaimed(bob), true);
     });
@@ -1823,7 +1823,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       currentBlockNumber = await time.latestBlock();
 
       anniversaryAchievement = await AnniversaryAchievement.new(
-        pancakeProfile.address,
+        sectaProfile.address,
         "100",
         "5",
         "511010101",
@@ -1832,7 +1832,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
       );
 
       // Grants point role to the new contract
-      result = await pancakeProfile.grantRole(POINT_ROLE, anniversaryAchievement.address, {
+      result = await sectaProfile.grantRole(POINT_ROLE, anniversaryAchievement.address, {
         from: alice,
       });
 
@@ -1857,7 +1857,7 @@ contract("BunnyFactoryV3 and above", ([alice, bob, carol, david, eve, frank]) =>
 
       result = await anniversaryAchievement.claimAnniversaryPoints({ from: carol });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, pancakeProfile, "UserPointIncrease", {
+      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
         userAddress: carol,
         numberPoints: "100",
         campaignId: "511010101",

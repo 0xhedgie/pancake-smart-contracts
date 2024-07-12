@@ -3,24 +3,24 @@ pragma solidity ^0.6.12;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "bsc-library/contracts/IBEP20.sol";
-import "bsc-library/contracts/SafeBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
 import "./BunnyMintingStation.sol";
-import "./PancakeProfile.sol";
+import "./SectaProfile.sol";
 
 /** @title BunnySpecialV1.
  * @notice It is a contract for users to mint exclusive NFTs
  * based on a CAKE price and userId.
  */
 contract BunnySpecialV1 is Ownable {
-    using SafeBEP20 for IBEP20;
+    using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     BunnyMintingStation public bunnyMintingStation;
-    PancakeProfile public pancakeProfile;
+    SectaProfile public sectaProfile;
 
-    IBEP20 public cakeToken;
+    IERC20 public cakeToken;
 
     uint256 public maxViewLength;
     uint256 public numberDifferentBunnies;
@@ -53,13 +53,13 @@ contract BunnySpecialV1 is Ownable {
 
     constructor(
         BunnyMintingStation _bunnyMintingStation,
-        IBEP20 _cakeToken,
-        PancakeProfile _pancakeProfile,
+        IERC20 _cakeToken,
+        SectaProfile _sectaProfile,
         uint256 _maxViewLength
     ) public {
         bunnyMintingStation = _bunnyMintingStation;
         cakeToken = _cakeToken;
-        pancakeProfile = _pancakeProfile;
+        sectaProfile = _sectaProfile;
         maxViewLength = _maxViewLength;
     }
 
@@ -80,7 +80,7 @@ contract BunnySpecialV1 is Ownable {
         uint256 userId;
         bool isUserActive;
 
-        (userId, , , , , isUserActive) = pancakeProfile.getUserProfile(senderAddress);
+        (userId, , , , , isUserActive) = sectaProfile.getUserProfile(senderAddress);
 
         require(userId < bunnyCharacteristics[_bunnyId].thresholdUser, "ERR_USER_NOT_ELIGIBLE");
 
@@ -152,13 +152,13 @@ contract BunnySpecialV1 is Ownable {
     }
 
     function canClaimSingle(address _userAddress, uint8 _bunnyId) external view returns (bool) {
-        if (!pancakeProfile.hasRegistered(_userAddress)) {
+        if (!sectaProfile.hasRegistered(_userAddress)) {
             return false;
         } else {
             uint256 userId;
             bool userStatus;
 
-            (userId, , , , , userStatus) = pancakeProfile.getUserProfile(_userAddress);
+            (userId, , , , , userStatus) = sectaProfile.getUserProfile(_userAddress);
 
             if (!userStatus) {
                 return false;
@@ -172,14 +172,14 @@ contract BunnySpecialV1 is Ownable {
     function canClaimMultiple(address _userAddress, uint8[] calldata _bunnyIds) external view returns (bool[] memory) {
         require(_bunnyIds.length <= maxViewLength, "ERR_LENGTH_VIEW");
 
-        if (!pancakeProfile.hasRegistered(_userAddress)) {
+        if (!sectaProfile.hasRegistered(_userAddress)) {
             bool[] memory responses = new bool[](0);
             return responses;
         } else {
             uint256 userId;
             bool userStatus;
 
-            (userId, , , , , userStatus) = pancakeProfile.getUserProfile(_userAddress);
+            (userId, , , , , userStatus) = sectaProfile.getUserProfile(_userAddress);
 
             if (!userStatus) {
                 bool[] memory responses = new bool[](0);

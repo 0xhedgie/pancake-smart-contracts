@@ -5,10 +5,10 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721Holder.sol";
-import "bsc-library/contracts/IBEP20.sol";
-import "bsc-library/contracts/SafeBEP20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 
-import "./interfaces/IPancakeProfile.sol";
+import "./interfaces/ISectaProfile.sol";
 import "./BunnyMintingStation.sol";
 
 /** @title TradingCompV3.
@@ -16,15 +16,15 @@ import "./BunnyMintingStation.sol";
 based on off-chain events
 */
 contract TradingCompV3 is Ownable, ERC721Holder {
-    using SafeBEP20 for IBEP20;
+    using SafeERC20 for IERC20;
 
     BunnyMintingStation public immutable bunnyMintingStation;
-    IBEP20 public immutable cakeToken;
-    IBEP20 public immutable moboxToken;
-    IBEP20 public immutable moboxMisteryBoxToken;
+    IERC20 public immutable cakeToken;
+    IERC20 public immutable moboxToken;
+    IERC20 public immutable moboxMisteryBoxToken;
     IERC721Enumerable public moboxAvatarNFTCollection;
 
-    IPancakeProfile public immutable pancakeProfile;
+    ISectaProfile public immutable sectaProfile;
 
     uint256 public constant numberTeams = 3;
 
@@ -71,7 +71,7 @@ contract TradingCompV3 is Ownable, ERC721Holder {
 
     /**
      * @notice It initializes the contract.
-     * @param _pancakeProfileAddress: PancakeProfile address
+     * @param _sectaProfileAddress: SectaProfile address
      * @param _bunnyStationAddress: BunnyMintingStation address
      * @param _cakeTokenAddress: the address of the CAKE token
      * @param _moboxTokenAddress: the address of the MOBOX token
@@ -79,18 +79,18 @@ contract TradingCompV3 is Ownable, ERC721Holder {
      * @param _competitionId: competition uniq id
      */
     constructor(
-        address _pancakeProfileAddress,
+        address _sectaProfileAddress,
         address _bunnyStationAddress,
         address _cakeTokenAddress,
         address _moboxTokenAddress,
         address _moboxMisteryBoxTokenAddress,
         uint256 _competitionId
     ) public {
-        pancakeProfile = IPancakeProfile(_pancakeProfileAddress);
+        sectaProfile = ISectaProfile(_sectaProfileAddress);
         bunnyMintingStation = BunnyMintingStation(_bunnyStationAddress);
-        cakeToken = IBEP20(_cakeTokenAddress);
-        moboxToken = IBEP20(_moboxTokenAddress);
-        moboxMisteryBoxToken = IBEP20(_moboxMisteryBoxTokenAddress);
+        cakeToken = IERC20(_cakeTokenAddress);
+        moboxToken = IERC20(_moboxTokenAddress);
+        moboxMisteryBoxToken = IERC20(_moboxMisteryBoxTokenAddress);
         competitionId = _competitionId;
         currentStatus = CompetitionStatus.Registration;
     }
@@ -115,7 +115,7 @@ contract TradingCompV3 is Ownable, ERC721Holder {
         uint256 registeredUserTeamId = userTradingStats[senderAddress].teamId;
         bool isUserActive;
         uint256 userTeamId;
-        (, , userTeamId, , , isUserActive) = pancakeProfile.getUserProfile(senderAddress);
+        (, , userTeamId, , , isUserActive) = sectaProfile.getUserProfile(senderAddress);
 
         require(isUserActive, "NOT_ACTIVE");
         require(userTeamId == registeredUserTeamId, "USER_TEAM_HAS_CHANGED");
@@ -144,7 +144,7 @@ contract TradingCompV3 is Ownable, ERC721Holder {
         }
 
         // User collects points
-        pancakeProfile.increaseUserPoints(
+        sectaProfile.increaseUserPoints(
             senderAddress,
             userRewards.pointUsers[userRewardGroup],
             userRewards.userCampaignId[userRewardGroup]
@@ -153,7 +153,7 @@ contract TradingCompV3 is Ownable, ERC721Holder {
 
     /**
      * @notice It allows users to register for trading competition
-     * @dev Only callable if the user has an active PancakeProfile.
+     * @dev Only callable if the user has an active SectaProfile.
      */
     function register() external {
         address senderAddress = _msgSender();
@@ -168,7 +168,7 @@ contract TradingCompV3 is Ownable, ERC721Holder {
         uint256 userTeamId;
         bool isUserActive;
 
-        (, , userTeamId, , , isUserActive) = pancakeProfile.getUserProfile(senderAddress);
+        (, , userTeamId, , , isUserActive) = sectaProfile.getUserProfile(senderAddress);
 
         require(isUserActive, "NOT_ACTIVE");
 
@@ -355,7 +355,7 @@ contract TradingCompV3 is Ownable, ERC721Holder {
         )
     {
         bool isUserActive;
-        (, , , , , isUserActive) = pancakeProfile.getUserProfile(_userAddress);
+        (, , , , , isUserActive) = sectaProfile.getUserProfile(_userAddress);
         UserStats memory userStats = userTradingStats[_userAddress];
         bool hasUserRegistered = userStats.hasRegistered;
         if ((currentStatus != CompetitionStatus.Claiming) && (currentStatus != CompetitionStatus.Over)) {
