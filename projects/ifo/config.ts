@@ -1,12 +1,12 @@
 export default {
   AdminAddress: {
-    mainnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // li
-    testnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6", // jac
+    mainnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6",
+    testnet: "0x8FF935fFF25f2595248DfAd098ce353843aA72c6",
   },
   LPToken: {
-    mainnet: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f",
+    mainnet: "0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f", // WETH
 
-    // weth 0x10253594A832f967994b44f33411940533302ACb
+    // 0x10253594A832f967994b44f33411940533302ACb // WETH
     testnet: "0x7Fb44Fe0D3C595B7C8Ba5690bded52C72E6fE410", // USDT, self-made
   },
   OfferingToken: {
@@ -39,7 +39,7 @@ export default {
   },
   IFODeployer: {
     mainnet: "0x0000000000000000000000000000000000000000",
-    testnet: "0x74EDeFbEc489097abF249A99f4fd1dB78080BF38",
+    testnet: "0xA333bC5D656ae2C64244fae27E5c785eE86e717c",
   },
   IFOV1: {
     mainnet: "0x0000000000000000000000000000000000000000",
