@@ -56,9 +56,6 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
     // It maps the address to pool id to UserInfo
     mapping(address => mapping(uint8 => UserInfo)) private _userInfo;
 
-    // It maps user address to accumulative deposit lptoken amount
-    mapping(address => uint256) public userAccumulateDeposits;
-
     uint256 public rateMultiplier;
     uint256 public constant BASE_MULTIPLIER = 1_000_000;
 
@@ -173,8 +170,6 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         // Checks whether the pool id is valid
         require(_pid < NUMBER_POOLS, "Deposit: Non valid pool id");
 
-        uint256 userAccumulated = userAccumulateDeposits[msg.sender].add(_amount);
-
         // Checks if the user is in the merkle tree
         if (_poolInformation[_pid].saleType == SALE_PRIVATE) {
             require(_poolInformation[_pid].merkleRoot != bytes32(0), "Deposit: Merkle merkleRoot not set");
@@ -184,13 +179,9 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         } else if (_poolInformation[_pid].saleType == SALE_BASIC) {
             require(proof.length == 0, "Deposit: No proof needed for basic sale");
         } else if (_poolInformation[_pid].saleType == SALE_PUBLIC) {
-            uint256 limit = stakingPool
-                .balanceOfAtTime(msg.sender, startTimestamp)
-                .mul(uint256(10)**lpTokenDecimals)
-                .mul(rateMultiplier)
-                .div(uint256(10)**stakingPool.tokenDecimals())
-                .div((BASE_MULTIPLIER));
-            require(userAccumulated < limit, "Deposit: Not enough staking credit");
+            // condition check further down
+        } else {
+            revert("Unsupported sale");
         }
 
         // Checks that pool was set
@@ -211,15 +202,22 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         // Verify tokens were deposited properly
         require(offeringToken.balanceOf(address(this)) >= totalTokensOffered, "Deposit: Tokens not deposited properly");
 
-        // Updates Accumulative deposit lptokens
-        userAccumulateDeposits[msg.sender] = userAccumulated;
-
         uint256 userPooled = _userInfo[msg.sender][_pid].amountPool.add(_amount);
 
         // Check if the pool has a limit per user
         if (_poolInformation[_pid].limitPerUserInLP > 0) {
             // Checks whether the limit has been reached
             require(userPooled <= _poolInformation[_pid].limitPerUserInLP, "Deposit: New amount above user limit");
+        }
+
+        if (_poolInformation[_pid].saleType == SALE_PUBLIC) {
+            uint256 limit = stakingPool
+                .balanceOfAtTime(msg.sender, startTimestamp)
+                .mul(uint256(10)**lpTokenDecimals)
+                .mul(rateMultiplier)
+                .div(uint256(10)**stakingPool.tokenDecimals())
+                .div((BASE_MULTIPLIER));
+            require(userPooled <= limit, "Deposit: Not enough staking boost");
         }
 
         // Update the user status
@@ -352,6 +350,9 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
         _poolInformation[_pid].raisingAmountPool = _raisingAmountPool;
         _poolInformation[_pid].limitPerUserInLP = _limitPerUserInLP;
         _poolInformation[_pid].hasTax = _hasTax;
+
+        _poolInformation[_pid].saleType = _saleType;
+        _poolInformation[_pid].merkleRoot = _root;
 
         uint256 tokensDistributedAcrossPools;
 
@@ -631,7 +632,7 @@ contract IFOInitializableV2 is IIFO, ReentrancyGuard, Ownable {
      */
     function _getUserAllocationPool(address _user, uint8 _pid) internal view returns (uint256) {
         if (_poolInformation[_pid].totalAmountPool > 0) {
-            return _userInfo[_user][_pid].amountPool.mul(1e18).div(_poolInformation[_pid].totalAmountPool.mul(1e6));
+            return _userInfo[_user][_pid].amountPool.mul(1e12).div(_poolInformation[_pid].totalAmountPool);
         } else {
             return 0;
         }

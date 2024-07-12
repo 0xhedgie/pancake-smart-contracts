@@ -580,7 +580,7 @@ contract IFOV1 is IIFO, ReentrancyGuard, Ownable {
      */
     function _getUserAllocationPool(address _user, uint8 _pid) internal view returns (uint256) {
         if (_poolInformation[_pid].totalAmountPool > 0) {
-            return _userInfo[_user][_pid].amountPool.mul(1e18).div(_poolInformation[_pid].totalAmountPool).div(1e6);
+            return _userInfo[_user][_pid].amountPool.mul(1e12).div(_poolInformation[_pid].totalAmountPool);
         } else {
             return 0;
         }

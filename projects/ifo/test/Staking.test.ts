@@ -130,11 +130,11 @@ contract("Staking", async ([alice, bob, carol, david, ...accounts]) => {
       console.log("current fee:", fee.toString());
 
       await expectRevert(mockStaking.withdrawFee(david, { from: alice }), "Ownable: caller is not the owner");
+      console.log("after first try (revert): ", (await mockStaking.protocolFee()).toString());
 
-      console.log("after first try (rever): ", (await mockStaking.protocolFee()).toString());
       await mockStaking.withdrawFee(david, { from: carol });
-
       console.log("after second try: ", (await mockStaking.protocolFee()).toString());
+
       assert.equal((await mockLP.balanceOf(david)).toString(), fee);
     });
   });

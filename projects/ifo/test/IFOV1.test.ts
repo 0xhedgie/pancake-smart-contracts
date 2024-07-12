@@ -1666,7 +1666,7 @@ contract("IFO V1", async ([alice, bob, carol, david, erin, frank, ...accounts]) 
     });
   });
 
-  describe("View", async () => {
+  describe("Views", async () => {
     it("viewUserInfo is correct", async () => {
       const result = await mockIFO.viewUserInfo(alice, [0, 1]);
 

@@ -6,28 +6,17 @@ import { BN, expectEvent, expectRevert, time, ether } from "@openzeppelin/test-h
 
 const IFOInitializableV2 = artifacts.require("./IFOInitializableV2.sol");
 const IFODeployerV2 = artifacts.require("./IFODeployerV2.sol");
+const StakingPool = artifacts.require("./Staking.sol");
 
-const SectaProfile = artifacts.require("profile-nft-gamification/contracts/SectaProfile.sol");
 const MockERC20 = artifacts.require("./utils/MockERC20.sol");
-const MockBunnies = artifacts.require("./utils/MockBunnies.sol");
-
-const SectaToken = artifacts.require("secta-vault/contracts/test/SectaToken.sol");
-const SyrupBar = artifacts.require("secta-vault/contracts/test/SyrupBar.sol");
-const MasterChef = artifacts.require("secta-vault/contracts/test/MasterChef.sol");
-const IFOPool = artifacts.require("secta-vault/contracts/IFOPool.sol");
-
-const REWARDS_START_BLOCK = 100;
 
 contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]) => {
   // SectaProfile
   const _totalInitSupply = parseEther("5000000"); // 50 SECTA
-  const _numberSectaToReactivate = parseEther("5"); // 5 SECTA
-  const _numberSectaToRegister = parseEther("5"); // 5 SECTA
-  const _numberSectaToUpdate = parseEther("2"); // 2 SECTA
 
   // IFO block times
-  let _startBlock;
-  let _endBlock;
+  let _startTimestamp;
+  let _endTimestamp;
 
   // IFO Pool 0
   const offeringAmountPool0 = parseEther("50");
@@ -42,31 +31,15 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
   const offeringTotalAmount = offeringAmountPool0.add(offeringAmountPool1);
   const raisingAmountTotal = parseEther("105");
 
-  // Gamification parameters
-  const campaignId = "12345678";
-  const numberPoints = "100";
-  const thresholdPoints = parseEther("0.035");
-
   // VARIABLES
 
   // Contracts
-  let mockBunnies;
   let mockSecta;
   let mockIFO;
   let mockOC;
   let mockLP;
-  let sectaProfile;
   let deployer;
-  let ifopool;
-  let secta;
-  let syrup;
-  let masterchef;
-  let rewardsStartBlock;
 
-  // Roles in SectaProfile
-  let DEFAULT_ADMIN_ROLE;
-  let NFT_ROLE;
-  let POINT_ROLE;
   // Generic result variable
   let result;
 
@@ -83,136 +56,19 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
     mockOC = await MockERC20.new("Mock Offering Coin", "OC", parseEther("100000000"), {
       from: alice,
     });
-
-    // Deploy Mock Bunnies
-    mockBunnies = await MockBunnies.new({ from: alice });
-
-    // Deploy Secta Profile
-    sectaProfile = await SectaProfile.new(
-      mockSecta.address,
-      _numberSectaToReactivate,
-      _numberSectaToRegister,
-      _numberSectaToUpdate,
-      { from: alice }
-    );
-
-    // Deploy IFOPool
-    secta = await SectaToken.new({ from: frank });
-    syrup = await SyrupBar.new(secta.address, { from: frank });
-    rewardsStartBlock = (await time.latestBlock()).toNumber() + REWARDS_START_BLOCK;
-    masterchef = await MasterChef.new(secta.address, syrup.address, frank, ether("1"), rewardsStartBlock, {
-      from: frank,
-    });
-
-    ifopool = await IFOPool.new(secta.address, syrup.address, masterchef.address, frank, frank, 500, 505, {
-      from: frank,
-    });
-
-    await syrup.transferOwnership(masterchef.address, { from: frank });
-    // grant all users credits
-    for (const user of [alice, bob, carol, david, erin, frank, frank, ...accounts]) {
-      // Mint secta to all users
-      await secta.mint(user, ether("1000000"), { from: frank });
-      // Approves secta to be spent by IFOPool
-      await secta.approve(ifopool.address, parseEther("1000000"), {
-        from: user,
-      });
-
-      await ifopool.deposit(ether("10000"), { from: user });
-    }
-    await ifopool.withdraw(ether("8000"), { from: accounts[2] });
-    await secta.transferOwnership(masterchef.address, { from: frank });
-
-    await time.advanceBlockTo(515);
-
-    // Assign the roles
-    DEFAULT_ADMIN_ROLE = await sectaProfile.DEFAULT_ADMIN_ROLE();
-    NFT_ROLE = await sectaProfile.NFT_ROLE();
-    POINT_ROLE = await sectaProfile.POINT_ROLE();
   });
 
   describe("Initial contract parameters for all contracts", async () => {
-    it("SectaProfile is correct", async () => {
-      assert.equal(await sectaProfile.sectaToken(), mockSecta.address);
-      assert.equal(String(await sectaProfile.numberSectaToReactivate()), String(_numberSectaToReactivate));
-      assert.equal(String(await sectaProfile.numberSectaToRegister()), String(_numberSectaToRegister));
-      assert.equal(String(await sectaProfile.numberSectaToUpdate()), String(_numberSectaToUpdate));
-
-      assert.equal(await sectaProfile.getRoleMemberCount(DEFAULT_ADMIN_ROLE), "1");
-    });
-
-    it("Alice adds NFT and a team in the system", async () => {
-      await sectaProfile.addNftAddress(mockBunnies.address, {
-        from: alice,
-      });
-      await sectaProfile.addTeam("The Testers", "ipfs://hash/team1.json", {
-        from: alice,
-      });
-    });
-
-    it("Bob/Carol/David/Erin create a profile in the system", async () => {
-      let i = 0;
-
-      for (const thisUser of [bob, carol, david, erin]) {
-        // Mints 100 SECTA
-        await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
-
-        // Mints 10,000 LP tokens
-        await mockLP.mintTokens(parseEther("10000"), { from: thisUser });
-
-        // Mints a NFT
-        result = await mockBunnies.mint({ from: thisUser });
-
-        // Approves the contract to receive his NFT
-        await mockBunnies.approve(sectaProfile.address, i, {
-          from: thisUser,
-        });
-
-        // Approves SECTA to be spent by SectaProfile
-        await mockSecta.approve(sectaProfile.address, parseEther("100"), {
-          from: thisUser,
-        });
-
-        // Creates the profile
-        await sectaProfile.createProfile("1", mockBunnies.address, i, {
-          from: thisUser,
-        });
-        i++;
-      }
-
-      // 4 generic accounts too
-      for (const thisUser of accounts) {
-        // Mints 100 SECTA
-        await mockSecta.mintTokens(parseEther("100"), { from: thisUser });
-
-        // Mints 1,000 LP tokens
-        await mockLP.mintTokens(parseEther("1000"), { from: thisUser });
-
-        // Mnts a NFT
-        result = await mockBunnies.mint({ from: thisUser });
-
-        // Approves the contract to receive his NFT
-        await mockBunnies.approve(sectaProfile.address, i, {
-          from: thisUser,
-        });
-
-        // Approves SECTA to be spent by SectaProfile
-        await mockSecta.approve(sectaProfile.address, parseEther("100"), {
-          from: thisUser,
-        });
-
-        // Creates the profile
-        await sectaProfile.createProfile("1", mockBunnies.address, i, {
-          from: thisUser,
-        });
-        i++;
+    it("LP token is minted", async () => {
+      for (const user of [alice, bob, carol, david, erin, frank, ...accounts]) {
+        await mockLP.mint(user, ether("1000000"), { from: frank });
       }
     });
   });
 
   describe("IFO DeployerV2 #0 - Initial set up", async () => {
     it("The IFODeployerV2 is deployed and initialized", async () => {
-      deployer = await IFODeployerV2.new(sectaProfile.address, {
+      deployer = await IFODeployerV2.new({
         from: alice,
       });
     });
@@ -225,17 +81,18 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
 
   describe("IFO #1 - Initial set up", async () => {
     it("The IFO #1 is deployed and initialized", async () => {
-      _startBlock = new BN(await time.latestBlock()).add(new BN("50"));
-      _endBlock = new BN(await time.latestBlock()).add(new BN("250"));
+      _startTimestamp = new BN(await time.latest()).add(new BN("50"));
+      _endTimestamp = new BN(await time.latest()).add(new BN("2950"));
 
       // Alice deploys the IFO setting herself as the contract admin
       let result = await deployer.createIFO(
         mockLP.address,
         mockOC.address,
-        _startBlock,
-        _endBlock,
+        _startTimestamp,
+        _endTimestamp,
         alice,
-        ifopool.address,
+        "0x0000000000000000000000000000000000000000",
+        1000000,
         {
           from: alice,
         }
@@ -248,18 +105,13 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
       mockIFO = await IFOInitializableV2.at(ifoAddress);
 
       await expectRevert(
-        mockIFO.updateStartAndEndBlocks("195", "180", { from: alice }),
-        "Operations: New startBlock must be lower than new endBlock"
+        mockIFO.updateStartAndEndTimestamps(_endTimestamp, _startTimestamp, { from: alice }),
+        "Operations: New startTimestamp must be lower than new endTimestamp"
       );
 
-      const blockNumber = await time.latestBlock();
+      result = await mockIFO.updateStartAndEndTimestamps(_startTimestamp, _endTimestamp, { from: alice });
 
-      result = await mockIFO.updateStartAndEndBlocks(_startBlock, _endBlock, { from: alice });
-
-      expectEvent(result, "NewStartAndEndBlocks", { startBlock: _startBlock, endBlock: _endBlock });
-
-      // Grants point role to the IFO contract
-      await sectaProfile.grantRole(POINT_ROLE, mockIFO.address);
+      expectEvent(result, "NewStartAndEndTimestamps", { startTimestamp: _startTimestamp, endTimestamp: _endTimestamp });
     });
 
     it("Mock IFO is deployed without pools set", async () => {
@@ -299,6 +151,8 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
         limitPerUserInLp,
         false, // tax
         "0",
+        0,
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
         { from: alice }
       );
 
@@ -318,6 +172,8 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
         "0",
         true, // tax
         "1",
+        0,
+        "0x0000000000000000000000000000000000000000000000000000000000000000",
         { from: alice }
       );
 
@@ -330,14 +186,6 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
       });
 
       assert.equal(String(await mockIFO.totalTokensOffered()), String(offeringTotalAmount));
-
-      result = await mockIFO.updatePointParameters(campaignId, numberPoints, thresholdPoints, { from: alice });
-
-      expectEvent(result, "PointParametersSet", {
-        campaignId: String(campaignId),
-        numberPoints: String(numberPoints),
-        thresholdPoints: String(thresholdPoints),
-      });
     });
 
     it("All users are approving the tokens to be spent by the IFO", async () => {
@@ -359,15 +207,8 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
   });
 
   describe("IFO #2 - OVERFLOW FOR BOTH POOLS", async () => {
-    it("User cannot deposit without a profile", async () => {
-      await expectRevert(
-        mockIFO.depositPool(parseEther("0.6"), "0", { from: frank }),
-        "Deposit: Must have an active profile"
-      );
-      await expectRevert(
-        mockIFO.depositPool(parseEther("0.6"), "1", { from: frank }),
-        "Deposit: Must have an active profile"
-      );
+    it("User cannot deposit into an uninitialized pool", async () => {
+      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "2", [], { from: frank }), "Deposit: Pool not set");
     });
 
     it("User cannot deposit if tokens not deposited", async () => {
@@ -375,28 +216,28 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
         from: bob,
       });
 
-      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "0", { from: bob }), "Deposit: Too early");
-      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "1", { from: bob }), "Deposit: Too early");
+      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "0", [], { from: bob }), "Deposit: Too early");
+      await expectRevert(mockIFO.depositPool(parseEther("0.6"), "1", [], { from: bob }), "Deposit: Too early");
 
-      await time.advanceBlockTo(_startBlock);
+      await time.increaseTo(_startTimestamp);
     });
 
     it("User cannot deposit in pools if amount is 0", async () => {
-      await expectRevert(mockIFO.depositPool(parseEther("0"), "0", { from: bob }), "Deposit: Amount must be > 0");
-      await expectRevert(mockIFO.depositPool(parseEther("0"), "1", { from: bob }), "Deposit: Amount must be > 0");
+      await expectRevert(mockIFO.depositPool(parseEther("0"), "0", [], { from: bob }), "Deposit: Amount must be > 0");
+      await expectRevert(mockIFO.depositPool(parseEther("0"), "1", [], { from: bob }), "Deposit: Amount must be > 0");
     });
 
     it("User cannot deposit in pools that don't exist", async () => {
-      await expectRevert(mockIFO.depositPool(parseEther("0"), "2", { from: bob }), "Deposit: Non valid pool id");
+      await expectRevert(mockIFO.depositPool(parseEther("0"), "3", [], { from: bob }), "Deposit: Non valid pool id");
     });
 
     it("User cannot deposit if tokens not deposited", async () => {
       await expectRevert(
-        mockIFO.depositPool(parseEther("0.3"), "0", { from: bob }),
+        mockIFO.depositPool(parseEther("0.3"), "0", [], { from: bob }),
         "Deposit: Tokens not deposited properly"
       );
       await expectRevert(
-        mockIFO.depositPool(parseEther("0.3"), "1", { from: bob }),
+        mockIFO.depositPool(parseEther("0.3"), "1", [], { from: bob }),
         "Deposit: Tokens not deposited properly"
       );
 
@@ -406,11 +247,11 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
       });
 
       await expectRevert(
-        mockIFO.depositPool(parseEther("0.3"), "0", { from: bob }),
+        mockIFO.depositPool(parseEther("0.3"), "0", [], { from: bob }),
         "Deposit: Tokens not deposited properly"
       );
       await expectRevert(
-        mockIFO.depositPool(parseEther("0.3"), "1", { from: bob }),
+        mockIFO.depositPool(parseEther("0.3"), "1", [], { from: bob }),
         "Deposit: Tokens not deposited properly"
       );
 
@@ -425,13 +266,13 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     it("User cannot deposit in pool0 if amount higher than the limit", async () => {
       await expectRevert(
-        mockIFO.depositPool(parseEther("0.6"), "0", { from: bob }),
+        mockIFO.depositPool(parseEther("0.6"), "0", [], { from: bob }),
         "Deposit: New amount above user limit"
       );
     });
 
     it("User (Bob) can deposit in pool0", async () => {
-      result = await mockIFO.depositPool(parseEther("0.3"), "0", { from: bob });
+      result = await mockIFO.depositPool(parseEther("0.3"), "0", [], { from: bob });
 
       expectEvent(result, "Deposit", {
         user: bob,
@@ -463,13 +304,13 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     it("User cannot deposit more in pool0 if new amount + amount > limit", async () => {
       await expectRevert(
-        mockIFO.depositPool(parseEther("0.200001"), "0", { from: bob }),
+        mockIFO.depositPool(parseEther("0.200001"), "0", [], { from: bob }),
         "Deposit: New amount above user limit"
       );
     });
 
     it("User (Bob) deposits 0.1 LP ", async () => {
-      result = await mockIFO.depositPool(parseEther("0.1"), "0", { from: bob });
+      result = await mockIFO.depositPool(parseEther("0.1"), "0", [], { from: bob });
       expectEvent(result, "Deposit", {
         user: bob,
         amount: String(parseEther("0.1")),
@@ -486,7 +327,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
     });
 
     it("User (Carol) deposits in pool0", async () => {
-      await mockIFO.depositPool(parseEther("0.5"), "0", { from: carol });
+      await mockIFO.depositPool(parseEther("0.5"), "0", [], { from: carol });
 
       result = await mockIFO.viewUserAllocationPools(bob, [0]);
       assert.equal(result[0].toString(), "444444444444");
@@ -514,7 +355,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
     });
 
     it("User (David) deposits in pool0", async () => {
-      await mockIFO.depositPool(parseEther("0.1"), "0", { from: david });
+      await mockIFO.depositPool(parseEther("0.1"), "0", [], { from: david });
 
       // 0.4/1 * 1M = 400,000
       let expectedResult = parseEther("0.4").mul(1e12).div(parseEther("1"));
@@ -552,7 +393,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     it("14 accounts deposit in pool0", async () => {
       for (const thisUser of accounts) {
-        await mockIFO.depositPool(parseEther("0.5"), "0", { from: thisUser });
+        await mockIFO.depositPool(parseEther("0.5"), "0", [], { from: thisUser });
       }
 
       // No tax on overflow for pool 1
@@ -564,7 +405,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
     });
 
     it("User (Bob) can deposit in pool1", async () => {
-      result = await mockIFO.depositPool(parseEther("4"), "1", { from: bob });
+      result = await mockIFO.depositPool(parseEther("4"), "1", [], { from: bob });
       expectEvent(result, "Deposit", {
         user: bob,
         amount: String(parseEther("4")),
@@ -587,7 +428,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
     });
 
     it("User (Carol) deposits in pool1", async () => {
-      result = await mockIFO.depositPool(parseEther("5"), "1", { from: carol });
+      result = await mockIFO.depositPool(parseEther("5"), "1", [], { from: carol });
 
       expectEvent(result, "Deposit", {
         user: carol,
@@ -613,7 +454,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
     });
 
     it("User (David) deposits in pool1", async () => {
-      await mockIFO.depositPool(parseEther("3"), "1", { from: david });
+      await mockIFO.depositPool(parseEther("3"), "1", [], { from: david });
 
       // 10 LP
       // 4/12 * 1M = 333,333
@@ -642,7 +483,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     it("Whale (account 0) deposits 88 LP in pool1", async () => {
       const amountDeposit = parseEther("88");
-      await mockIFO.depositPool(amountDeposit, "1", { from: accounts[0] });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: accounts[0] });
 
       // Tax overflow is 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -658,7 +499,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     it("Whale (account 1) deposits 300 LP in pool1", async () => {
       const amountDeposit = parseEther("300");
-      await mockIFO.depositPool(amountDeposit, "1", { from: accounts[1] });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: accounts[1] });
 
       // Tax overflow is 1%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -674,7 +515,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     it("Whale (account 2) deposits 600 LP in pool1", async () => {
       const amountDeposit = parseEther("600");
-      await mockIFO.depositPool(amountDeposit, "1", { from: accounts[2] });
+      await mockIFO.depositPool(amountDeposit, "1", [], { from: accounts[2] });
 
       // Tax overflow is 1.00%
       assert.equal(String(await mockIFO.viewPoolTaxRateOverflow("1")), "10000000000");
@@ -690,16 +531,16 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
 
     it("Cannot harvest before end of the IFO", async () => {
       await expectRevert(mockIFO.harvestPool("0", { from: bob }), "Harvest: Too early");
-      await time.advanceBlockTo(_endBlock);
+      await time.increaseTo(_endTimestamp);
     });
 
     it("Cannot harvest with wrong pool id", async () => {
-      await expectRevert(mockIFO.harvestPool("2", { from: bob }), "Harvest: Non valid pool id");
+      await expectRevert(mockIFO.harvestPool("3", { from: bob }), "Harvest: Non valid pool id");
     });
 
     it("Cannot deposit to any of the pools", async () => {
-      await expectRevert(mockIFO.depositPool(parseEther("1"), "0", { from: bob }), "Deposit: Too late");
-      await expectRevert(mockIFO.depositPool(parseEther("1"), "1", { from: bob }), "Deposit: Too late");
+      await expectRevert(mockIFO.depositPool(parseEther("1"), "0", [], { from: bob }), "Deposit: Too late");
+      await expectRevert(mockIFO.depositPool(parseEther("1"), "1", [], { from: bob }), "Deposit: Too late");
     });
 
     it("Cannot harvest if didn't participate", async () => {
@@ -725,12 +566,6 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
         offeringAmount: String(parseEther("2.5")),
         excessAmount: String(parseEther("0.15")),
         pid: "0",
-      });
-
-      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
-        userAddress: bob,
-        numberPoints: String(numberPoints),
-        campaignId: String(campaignId),
       });
 
       // Verify user balances changed accordingly
@@ -772,12 +607,6 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
         pid: "0",
       });
 
-      expectEvent.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease", {
-        userAddress: carol,
-        numberPoints: String(numberPoints),
-        campaignId: String(campaignId),
-      });
-
       // Verify user balances changed accordingly
       const newOCBalance = new BN(await mockOC.balanceOf(carol));
       const changeOCBalance = newOCBalance.sub(previousOCBalance);
@@ -810,9 +639,6 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
         excessAmount: String(parseEther("3.564")),
         pid: "1",
       });
-
-      // Verify Bob has not collected points twice
-      expectEvent.notEmitted.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease");
 
       const newOCBalance = new BN(await mockOC.balanceOf(bob));
       const changeOCBalance = newOCBalance.sub(previousOCBalance);
@@ -854,9 +680,6 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
         excessAmount: String(parseEther("4.455")),
         pid: "1",
       });
-
-      // Verify Carol has not collected points twice
-      expectEvent.notEmitted.inTransaction(result.receipt.transactionHash, sectaProfile, "UserPointIncrease");
 
       const newOCBalance = new BN(await mockOC.balanceOf(carol));
       const changeOCBalance = newOCBalance.sub(previousOCBalance);
@@ -1045,7 +868,10 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
     });
 
     it("It is not possible to change IFO start/end blocks after start", async () => {
-      await expectRevert(mockIFO.updateStartAndEndBlocks("1", "2", { from: alice }), "Operations: IFO has started");
+      await expectRevert(
+        mockIFO.updateStartAndEndTimestamps(_startTimestamp, _endTimestamp, { from: alice }),
+        "Operations: IFO has started"
+      );
     });
 
     it("It is not possible to change IFO parameters after start", async () => {
@@ -1056,6 +882,8 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
           "0",
           false, // tax
           "0",
+          0,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
           { from: alice }
         ),
         "Operations: IFO has started"
@@ -1068,16 +896,11 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
           "0",
           false, // tax
           "0",
+          0,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
           { from: alice }
         ),
         "Operations: IFO has started"
-      );
-    });
-
-    it("It is not possible to change point parameters after start", async () => {
-      await expectRevert(
-        mockIFO.updatePointParameters(campaignId, numberPoints, thresholdPoints, { from: alice }),
-        "Operations: IFO has ended"
       );
     });
 
@@ -1113,12 +936,10 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
           limitPerUserInLp,
           false, // tax
           "0",
+          0,
+          "0x0000000000000000000000000000000000000000000000000000000000000000",
           { from: carol }
         ),
-        "Ownable: caller is not the owner"
-      );
-      await expectRevert(
-        mockIFO.updatePointParameters("1", "1", "1", { from: carol }),
         "Ownable: caller is not the owner"
       );
       await expectRevert(
@@ -1126,7 +947,7 @@ contract("IFO DeployerV2", ([alice, bob, carol, david, erin, frank, ...accounts]
         "Ownable: caller is not the owner"
       );
       await expectRevert(
-        mockIFO.updateStartAndEndBlocks("1", "2", { from: carol }),
+        mockIFO.updateStartAndEndTimestamps("1", "2", { from: carol }),
         "Ownable: caller is not the owner"
       );
     });
